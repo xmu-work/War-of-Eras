@@ -55,6 +55,11 @@ namespace WarOfEras.Battle.UI
                 return;
             }
 
+            if (FindFirstObjectByType<WarOfEras.Battle.Core.BattleGameController>() != null)
+            {
+                return;
+            }
+
             if (FindFirstObjectByType<BattleHUDMockup>() != null)
             {
                 return;

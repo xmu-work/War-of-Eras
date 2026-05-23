@@ -162,7 +162,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.075, g: 0.09, b: 0.1, a: 0}
+  m_BackGroundColor: {r: 0.055, g: 0.063, b: 0.058, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -222,7 +222,7 @@ GameObject:
   - component: {fileID: 200001}
   - component: {fileID: 200002}
   m_Layer: 0
-  m_Name: Battle Scene Root
+  m_Name: Main Menu Root
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -252,9 +252,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 200000}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9f3840e17174414fa129dd2cb1676a71, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Script: {fileID: 11500000, guid: 4d79f8bf9f744cd0864ccfa7db6b73cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

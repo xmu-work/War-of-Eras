@@ -29,6 +29,7 @@ Thumbs.db
 Desktop.ini
 
 # Cache / temp
+tmp/
 *.pidb
 *.booproj
 *.svd

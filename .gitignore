@@ -1,0 +1,29 @@
+# Unity generated folders
+/Library/
+/Logs/
+/UserSettings/
+/tmp/
+/Temp/
+/Obj/
+/Build/
+/Builds/
+
+# Unity generated files
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

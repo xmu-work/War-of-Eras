@@ -2,6 +2,7 @@
 /Library/
 /Logs/
 /UserSettings/
+/MemoryCaptures/
 /tmp/
 /Temp/
 /Obj/
@@ -12,6 +13,7 @@
 *.csproj
 *.sln
 *.suo
+*.tmp
 *.user
 *.userprefs
 *.pidb
@@ -22,8 +24,13 @@
 *.opendb
 *.VC.db
 
-# OS/editor noise
+# OS/editor files
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
+*.swp
+*.swo
+
+# Crash reports
+sysinfo.txt

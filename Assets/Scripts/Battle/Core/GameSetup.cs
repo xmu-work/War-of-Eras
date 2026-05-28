@@ -68,11 +68,11 @@ namespace WarOfEras.Battle.Core
                 switch (Difficulty)
                 {
                     case GameDifficulty.Easy:
-                        return 190f;
+                        return 225f;
                     case GameDifficulty.Hard:
-                        return 110f;
-                    default:
                         return 140f;
+                    default:
+                        return 175f;
                 }
             }
         }

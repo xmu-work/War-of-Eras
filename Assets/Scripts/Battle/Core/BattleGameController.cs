@@ -16,8 +16,15 @@ namespace WarOfEras.Battle.Core
         public const float PlayerBaseX = -15.05f;
         public const float EnemyBaseX = 15.05f;
 
+        private const string MainMenuSceneName = "MainMenu";
         private const string BattleSceneName = "Battle";
+        private const string DefeatBackdropPath = "Battle/Outcome/DefeatBackdrop";
+        private const string VictoryBackdropPath = "Battle/Outcome/VictoryBackdrop";
+        private const string FrontlineBedClipPath = "Audio/Ambience/00_three_lane_frontline_bed_loop";
         private const float EraValuePerSecond = 3.5f;
+        private const float FrontlineBedVolume = 0.18f;
+        private const float EraAmbienceVolume = 0.42f;
+        private const float EraAmbienceFadeDuration = 1.35f;
         private const float MobilizationCostMultiplier = 0.8f;
         private const float MobilizationSpeedMultiplier = 1.15f;
         private const float MapTextureWidth = 1672f;
@@ -30,7 +37,14 @@ namespace WarOfEras.Battle.Core
         private const float CameraEdgeScrollMargin = 36f;
         private const float CameraEdgeScrollSpeed = 20f;
         public const float UnitVisualScaleMultiplier = 0.82f;
-        public const float TowerVisualScale = 0.16f;
+        public const float TowerVisualScale = 0.16f / 3f;
+        private const float BaseVisualScale = 0.16f / 3f;
+        private const float ResourceWellVisualScale = 0.72f / 3f;
+        private const int ResourceWellCost = 120;
+        private const float ResourceWellIncomeBonus = 2.5f;
+        private const float ResourceWellEraValue = 65f;
+        private const float BuildPlacementClickRadius = 0.85f;
+        private const float UnitCombatContactPadding = 0.34f;
 
         private static readonly string[] AgeNames =
         {
@@ -39,6 +53,15 @@ namespace WarOfEras.Battle.Core
             "\u7535\u529b\u65f6\u4ee3",
             "\u6838\u80fd\u7eaa\u5143",
             "\u661f\u6d77\u6587\u660e"
+        };
+
+        private static readonly string[] AgeAmbienceClipPaths =
+        {
+            "Audio/Ambience/01_primitive_tribe_war_drums_loop",
+            "Audio/Ambience/02_mechanical_workshop_steam_gears_loop",
+            "Audio/Ambience/03_electric_tesla_grid_loop",
+            "Audio/Ambience/04_nuclear_reactor_zone_loop",
+            "Audio/Ambience/05_star_ocean_timeslow_loop"
         };
 
         private static readonly string[] AttackPathNames =
@@ -86,6 +109,13 @@ namespace WarOfEras.Battle.Core
             Balanced,
             Attack,
             Defense
+        }
+
+        private enum BuildPlacementKind
+        {
+            None,
+            Tower,
+            ResourceWell
         }
 
         private static readonly float[] LaneY = { 4.45f, 0.5f, -4.18f };
@@ -224,20 +254,46 @@ namespace WarOfEras.Battle.Core
             new Vector3(-9.35f, 0.95f, 0f),
             new Vector3(-8.15f, -2.7f, 0f)
         };
+
+        private static readonly Vector3[] EnemyTowerPositions =
+        {
+            new Vector3(9.45f, 3.9f, 0f),
+            new Vector3(9.35f, 0.95f, 0f),
+            new Vector3(8.15f, -2.7f, 0f)
+        };
+
+        private static readonly Vector3[] PlayerResourceWellPositions =
+        {
+            MapPoint(330f, 528f),
+            MapPoint(662f, 790f)
+        };
+
+        private static readonly Vector3[] EnemyResourceWellPositions =
+        {
+            MapPoint(1342f, 528f),
+            MapPoint(1010f, 790f)
+        };
+
         private static Sprite whiteSprite;
         private static Sprite panelSprite;
         private static Sprite buttonSprite;
         private static Sprite iconDiscSprite;
         private static Sprite vfxCircleSprite;
+        private static Sprite resourceWellSiteSprite;
+        private static Sprite resourceWellBuiltSprite;
 
         private readonly List<BattleUnit> units = new List<BattleUnit>();
         private readonly List<Button> laneButtons = new List<Button>();
         private readonly List<UnitButtonBinding> unitButtons = new List<UnitButtonBinding>();
         private readonly List<RouteCandidate> pendingRouteCandidates = new List<RouteCandidate>();
         private readonly List<RoutePreview> routePreviews = new List<RoutePreview>();
+        private readonly List<BuildPlacementPreview> buildPlacementPreviews = new List<BuildPlacementPreview>();
         private readonly List<string> statusLog = new List<string>();
         private readonly Dictionary<string, int> routeHoldCounts = new Dictionary<string, int>();
         private readonly BattleTower[] playerTowers = new BattleTower[3];
+        private readonly BattleTower[] enemyTowers = new BattleTower[3];
+        private readonly bool[] playerResourceWells = new bool[PlayerResourceWellPositions.Length];
+        private readonly bool[] enemyResourceWells = new bool[EnemyResourceWellPositions.Length];
 
         private readonly string[] laneNames =
         {
@@ -254,9 +310,12 @@ namespace WarOfEras.Battle.Core
         private Camera gameplayCamera;
         private Transform worldRoot;
         private Transform routePreviewRoot;
+        private Transform buildPreviewRoot;
+        private Transform facilityMarkerRoot;
         private Material routePreviewMaterial;
         private Material vfxLineMaterial;
         private RectTransform startHintPanel;
+        private RectTransform outcomeOverlay;
         private Text coinText;
         private Text ageText;
         private Text eraText;
@@ -264,8 +323,16 @@ namespace WarOfEras.Battle.Core
         private Text enemyHealthText;
         private Text laneText;
         private Text statusText;
+        private Text outcomeTitleShadowText;
+        private Text outcomeTitleText;
+        private Text outcomeSubtitleText;
+        private Text outcomeStatsText;
+        private AudioSource frontlineBedSource;
+        private AudioSource eraAmbienceSource;
+        private AudioSource fadingEraAmbienceSource;
         private RouteCandidate activeRouteCandidate;
         private Button towerButton;
+        private Button resourceWellButton;
         private Button agePowerButton;
         private Button shieldButton;
         private Button mobilizationButton;
@@ -275,6 +342,7 @@ namespace WarOfEras.Battle.Core
         private Image playerHealthFill;
         private Image enemyHealthFill;
         private Image eraFill;
+        private Image outcomeBackdropImage;
         private BattleMapDefinition selectedMap;
         private float incomePerSecond;
         private float enemySpawnIntervalScale;
@@ -298,12 +366,16 @@ namespace WarOfEras.Battle.Core
         private float baseDamageReduction;
         private float enemySpawnTimer = 2.5f;
         private float elapsedTime;
+        private float ambienceFadeElapsed;
         private int ageIndex;
+        private int currentAmbienceAgeIndex = -1;
         private int selectedLane = 1;
         private bool gameStarted;
         private bool gameOver;
         private bool hasMapBounds;
         private bool isCameraDragging;
+        private bool ambienceFadeActive;
+        private BuildPlacementKind activeBuildPlacement = BuildPlacementKind.None;
         private Vector2 mapBoundsMin;
         private Vector2 mapBoundsMax;
         private Vector3 lastCameraDragScreenPosition;
@@ -344,6 +416,7 @@ namespace WarOfEras.Battle.Core
             ApplyGameSetup();
             BuildDefinitions();
             ConfigureCamera();
+            ConfigureAmbienceAudio();
             BuildWorld();
             EnsureEventSystem();
             BuildHud();
@@ -353,6 +426,7 @@ namespace WarOfEras.Battle.Core
         private void Update()
         {
             UpdateCameraNavigation();
+            UpdateAmbienceFade();
 
             if (!gameStarted)
             {
@@ -367,8 +441,12 @@ namespace WarOfEras.Battle.Core
                 coins += incomePerSecond * Time.deltaTime;
                 GainEraValue(EraValuePerSecond * Time.deltaTime);
                 UpdateTimedEffects();
+                UpdateEnemyFacilities();
                 UpdateEnemySpawns();
-                UpdateRoutePlanningInput();
+                if (!UpdateBuildPlacementInput())
+                {
+                    UpdateRoutePlanningInput();
+                }
             }
 
             RefreshHud();
@@ -378,6 +456,8 @@ namespace WarOfEras.Battle.Core
 
         public float TowerDamageMultiplier => towerDamageMultiplier;
 
+        public bool IsGameOver => gameOver;
+
         public float GetLaneY(int laneIndex)
         {
             return LaneY[Mathf.Clamp(laneIndex, 0, LaneY.Length - 1)];
@@ -386,6 +466,18 @@ namespace WarOfEras.Battle.Core
         public Vector3[] GetLaneRoute(int laneIndex)
         {
             return LaneRoutes[Mathf.Clamp(laneIndex, 0, LaneRoutes.Length - 1)];
+        }
+
+        public static float GetUnitEngageDistance(UnitDefinition definition)
+        {
+            if (definition == null)
+            {
+                return 0.9f;
+            }
+
+            return definition.AttackRange > 1.25f
+                ? definition.AttackRange
+                : Mathf.Max(definition.AttackRange + UnitCombatContactPadding, 0.92f);
         }
 
         private static Vector3 MapPoint(float pixelX, float pixelY)
@@ -405,6 +497,11 @@ namespace WarOfEras.Battle.Core
         public Vector3 GetPlayerTowerPosition(int laneIndex)
         {
             return PlayerTowerPositions[Mathf.Clamp(laneIndex, 0, PlayerTowerPositions.Length - 1)];
+        }
+
+        public Vector3 GetEnemyTowerPosition(int laneIndex)
+        {
+            return EnemyTowerPositions[Mathf.Clamp(laneIndex, 0, EnemyTowerPositions.Length - 1)];
         }
 
         public BattleUnit FindNearestEnemy(BattleUnit seeker)
@@ -429,7 +526,7 @@ namespace WarOfEras.Battle.Core
                 }
 
                 var distance = Vector2.Distance(candidate.transform.position, seeker.transform.position);
-                if (distance > Mathf.Max(seeker.Definition.AttackRange * 1.2f, 0.9f))
+                if (distance > GetUnitEngageDistance(seeker.Definition))
                 {
                     continue;
                 }
@@ -444,7 +541,7 @@ namespace WarOfEras.Battle.Core
             return best;
         }
 
-        public BattleUnit FindTowerTarget(int laneIndex, Vector3 towerPosition, float range)
+        public BattleUnit FindTowerTarget(int towerTeam, int laneIndex, Vector3 towerPosition, float range)
         {
             BattleUnit best = null;
             var bestDistance = float.MaxValue;
@@ -452,7 +549,7 @@ namespace WarOfEras.Battle.Core
             for (var i = 0; i < units.Count; i++)
             {
                 var candidate = units[i];
-                if (candidate == null || !candidate.IsAlive || candidate.Team != 1 || candidate.LaneIndex != laneIndex)
+                if (candidate == null || !candidate.IsAlive || candidate.Team == towerTeam || candidate.LaneIndex != laneIndex)
                 {
                     continue;
                 }
@@ -511,6 +608,64 @@ namespace WarOfEras.Battle.Core
                     EndGame(true);
                 }
             }
+        }
+
+        public void SpawnCombatHitEffect(Vector3 position, int attackerTeam, bool ranged)
+        {
+            if (worldRoot == null)
+            {
+                return;
+            }
+
+            var root = new GameObject(ranged ? "Ranged Combat Impact" : "Melee Combat Impact");
+            root.transform.SetParent(worldRoot, false);
+            root.AddComponent<BattleTimedDestroy>().Configure(ranged ? 0.48f : 0.36f);
+
+            var direction = attackerTeam == 0 ? 1f : -1f;
+            var teamColor = attackerTeam == 0
+                ? new Color(1f, 0.86f, 0.34f, 0.92f)
+                : new Color(1f, 0.28f, 0.18f, 0.9f);
+            var flashPosition = position + new Vector3(0f, 0.18f, 0f);
+            var flash = CreateVfxDisc(
+                root.transform,
+                "Combat Flash",
+                flashPosition,
+                ranged ? new Color(teamColor.r, teamColor.g, teamColor.b, 0.55f) : teamColor,
+                ranged ? 0.26f : 0.34f,
+                136);
+            flash.gameObject.AddComponent<BattleVfxFade>().Configure(0.26f, ranged ? 1.4f : 1.15f, 160f * direction);
+
+            var slashColor = Color.Lerp(teamColor, Color.white, ranged ? 0.25f : 0.42f);
+            CreateVfxLine(
+                    root.transform,
+                    ranged ? "Impact Streak" : "Attack Slash",
+                    new[]
+                    {
+                        flashPosition + new Vector3(-direction * 0.38f, ranged ? 0.06f : -0.22f, 0f),
+                        flashPosition + new Vector3(direction * 0.42f, ranged ? 0.02f : 0.24f, 0f)
+                    },
+                    slashColor,
+                    ranged ? 0.04f : 0.065f,
+                    138)
+                .gameObject.AddComponent<BattleVfxFade>().Configure(ranged ? 0.28f : 0.22f, 0f, 0f);
+
+            if (ranged)
+            {
+                return;
+            }
+
+            CreateVfxLine(
+                    root.transform,
+                    "Counter Spark",
+                    new[]
+                    {
+                        flashPosition + new Vector3(-direction * 0.2f, 0.18f, 0f),
+                        flashPosition + new Vector3(direction * 0.22f, -0.12f, 0f)
+                    },
+                    new Color(1f, 0.95f, 0.72f, 0.78f),
+                    0.035f,
+                    139)
+                .gameObject.AddComponent<BattleVfxFade>().Configure(0.18f, 0f, 0f);
         }
 
         public void NotifyUnitKilled(BattleUnit unit, int attackerTeam)
@@ -685,6 +840,128 @@ namespace WarOfEras.Battle.Core
             camera.backgroundColor = new Color(0.12f, 0.15f, 0.12f, 1f);
         }
 
+        private void ConfigureAmbienceAudio()
+        {
+            var audioRoot = new GameObject("Battle Ambience Audio").transform;
+            audioRoot.SetParent(transform, false);
+
+            frontlineBedSource = CreateAmbienceSource(audioRoot, "Three Lane Frontline Bed", FrontlineBedVolume);
+            eraAmbienceSource = CreateAmbienceSource(audioRoot, "Era Ambience A", EraAmbienceVolume);
+            fadingEraAmbienceSource = CreateAmbienceSource(audioRoot, "Era Ambience B", 0f);
+
+            PlayAmbienceLoop(frontlineBedSource, FrontlineBedClipPath, FrontlineBedVolume);
+            SwitchEraAmbience(ageIndex, true);
+        }
+
+        private static AudioSource CreateAmbienceSource(Transform parent, string name, float volume)
+        {
+            var sourceObject = new GameObject(name, typeof(AudioSource));
+            sourceObject.transform.SetParent(parent, false);
+
+            var source = sourceObject.GetComponent<AudioSource>();
+            source.loop = true;
+            source.playOnAwake = false;
+            source.spatialBlend = 0f;
+            source.dopplerLevel = 0f;
+            source.priority = 96;
+            source.volume = volume;
+            return source;
+        }
+
+        private static void PlayAmbienceLoop(AudioSource source, string resourcePath, float volume)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            var clip = Resources.Load<AudioClip>(resourcePath);
+            if (clip == null)
+            {
+                Debug.LogWarning("Missing battle ambience resource: " + resourcePath);
+                return;
+            }
+
+            source.clip = clip;
+            source.volume = volume;
+            source.Play();
+        }
+
+        private void SwitchEraAmbience(int newAgeIndex, bool immediate)
+        {
+            if (eraAmbienceSource == null || fadingEraAmbienceSource == null)
+            {
+                return;
+            }
+
+            newAgeIndex = Mathf.Clamp(newAgeIndex, 0, AgeAmbienceClipPaths.Length - 1);
+            if (newAgeIndex == currentAmbienceAgeIndex && eraAmbienceSource.isPlaying)
+            {
+                return;
+            }
+
+            var clip = Resources.Load<AudioClip>(AgeAmbienceClipPaths[newAgeIndex]);
+            if (clip == null)
+            {
+                Debug.LogWarning("Missing battle ambience resource: " + AgeAmbienceClipPaths[newAgeIndex]);
+                return;
+            }
+
+            if (immediate || eraAmbienceSource.clip == null || !eraAmbienceSource.isPlaying)
+            {
+                ambienceFadeActive = false;
+                fadingEraAmbienceSource.Stop();
+                fadingEraAmbienceSource.volume = 0f;
+
+                eraAmbienceSource.clip = clip;
+                eraAmbienceSource.volume = EraAmbienceVolume;
+                eraAmbienceSource.Play();
+                currentAmbienceAgeIndex = newAgeIndex;
+                return;
+            }
+
+            fadingEraAmbienceSource.Stop();
+            fadingEraAmbienceSource.clip = clip;
+            fadingEraAmbienceSource.volume = 0f;
+            fadingEraAmbienceSource.Play();
+
+            ambienceFadeElapsed = 0f;
+            ambienceFadeActive = true;
+            currentAmbienceAgeIndex = newAgeIndex;
+        }
+
+        private void UpdateAmbienceFade()
+        {
+            if (!ambienceFadeActive)
+            {
+                return;
+            }
+
+            if (eraAmbienceSource == null || fadingEraAmbienceSource == null)
+            {
+                ambienceFadeActive = false;
+                return;
+            }
+
+            ambienceFadeElapsed += Time.deltaTime;
+            var progress = Mathf.Clamp01(ambienceFadeElapsed / EraAmbienceFadeDuration);
+            eraAmbienceSource.volume = Mathf.Lerp(EraAmbienceVolume, 0f, progress);
+            fadingEraAmbienceSource.volume = Mathf.Lerp(0f, EraAmbienceVolume, progress);
+
+            if (progress < 1f)
+            {
+                return;
+            }
+
+            eraAmbienceSource.Stop();
+            eraAmbienceSource.volume = 0f;
+
+            var oldSource = eraAmbienceSource;
+            eraAmbienceSource = fadingEraAmbienceSource;
+            fadingEraAmbienceSource = oldSource;
+            ambienceFadeActive = false;
+        }
+
         private void BuildWorld()
         {
             worldRoot = new GameObject("Playable Barbarian Battlefield").transform;
@@ -694,6 +971,15 @@ namespace WarOfEras.Battle.Core
             var map = CreateSprite(selectedMap.DisplayName + " Map", mapSprite, Vector3.zero, 0);
             map.transform.localScale = Vector3.one;
             CacheMapBounds(map.bounds);
+
+            facilityMarkerRoot = new GameObject("Facility Marker Root").transform;
+            facilityMarkerRoot.SetParent(worldRoot, false);
+
+            buildPreviewRoot = new GameObject("Build Preview Root").transform;
+            buildPreviewRoot.SetParent(worldRoot, false);
+
+            CreateBaseArt();
+            CreateResourceWellSiteMarkers();
             MoveCameraToStartView();
 
             routePreviewRoot = new GameObject("Route Preview Root").transform;
@@ -730,7 +1016,7 @@ namespace WarOfEras.Battle.Core
             }
 
             var pointerPosition = GetPointerScreenPosition();
-            ApplyCameraZoom(camera);
+            ApplyCameraZoom(camera, pointerPosition);
             if (IsSecondaryPointerHeld())
             {
                 if (!isCameraDragging && !IsPointerOverUi())
@@ -799,27 +1085,38 @@ namespace WarOfEras.Battle.Core
                 startHintPanel.gameObject.SetActive(false);
             }
 
-            status = "\u6218\u6597\u5f00\u59cb\uff01\u53f3\u952e\u62d6\u52a8\u6216\u628a\u9f20\u6807\u9760\u8fd1\u5c4f\u5e55\u8fb9\u7f18\u67e5\u770b\u6218\u573a\u3002";
+            status = "\u6218\u6597\u5f00\u59cb\uff01\u53f3\u952e\u62d6\u52a8\u3001\u6eda\u8f6e\u7f29\u653e\uff0c\u6216\u628a\u9f20\u6807\u9760\u8fd1\u5c4f\u5e55\u8fb9\u7f18\u67e5\u770b\u6218\u573a\u3002";
         }
 
-        private void ApplyCameraZoom(Camera camera)
+        private void ApplyCameraZoom(Camera camera, Vector3 pointerPosition)
         {
-            if (IsPointerOverUi())
+            if (IsPointerOverUi() || !IsPointerInsideScreen(pointerPosition))
             {
                 return;
             }
 
             var scroll = GetScrollDelta();
-            if (Mathf.Abs(scroll) <= 0.01f)
+            if (Mathf.Abs(scroll) <= 0.001f)
             {
                 return;
             }
 
-            camera.orthographicSize = Mathf.Clamp(
+            var focusBeforeZoom = GetWorldPointFromScreen(camera, pointerPosition);
+            var targetSize = Mathf.Clamp(
                 camera.orthographicSize - scroll * CameraZoomStep,
                 CameraMinOrthographicSize,
                 CameraMaxOrthographicSize);
-            ClampCameraToMap();
+
+            if (Mathf.Approximately(camera.orthographicSize, targetSize))
+            {
+                return;
+            }
+
+            camera.orthographicSize = targetSize;
+            var focusAfterZoom = GetWorldPointFromScreen(camera, pointerPosition);
+            var cameraPosition = camera.transform.position + focusBeforeZoom - focusAfterZoom;
+            cameraPosition.z = camera.transform.position.z;
+            camera.transform.position = ClampCameraPosition(cameraPosition);
         }
 
         private void SetStatus(string message)
@@ -932,13 +1229,32 @@ namespace WarOfEras.Battle.Core
         {
             var baseSprite = LoadSprite("Barbarian/Base/Base", 100f, new Rect(250f, 80f, 1170f, 740f));
             var playerBase = CreateSprite("Player Barbarian Base Art", baseSprite, new Vector3(PlayerBaseX + 1.25f, -0.16f, 0f), 3);
-            playerBase.transform.localScale = Vector3.one * 0.16f;
+            playerBase.transform.localScale = Vector3.one * BaseVisualScale;
             playerBase.color = new Color(1f, 0.96f, 0.86f, 0.88f);
 
             var enemyBase = CreateSprite("Enemy Barbarian Base Art", baseSprite, new Vector3(EnemyBaseX - 1.25f, -0.16f, 0f), 3);
             enemyBase.flipX = true;
-            enemyBase.transform.localScale = Vector3.one * 0.16f;
+            enemyBase.transform.localScale = Vector3.one * BaseVisualScale;
             enemyBase.color = new Color(1f, 0.66f, 0.58f, 0.78f);
+        }
+
+        private void CreateResourceWellSiteMarkers()
+        {
+            for (var i = 0; i < PlayerResourceWellPositions.Length; i++)
+            {
+                var marker = CreateSprite("Player Resource Well Site " + (i + 1), ResourceWellSiteSprite, PlayerResourceWellPositions[i], 4);
+                marker.transform.SetParent(facilityMarkerRoot, true);
+                marker.transform.localScale = Vector3.one * 0.72f;
+                marker.color = new Color(0.42f, 1f, 0.82f, 0.78f);
+            }
+
+            for (var i = 0; i < EnemyResourceWellPositions.Length; i++)
+            {
+                var marker = CreateSprite("Enemy Resource Well Site " + (i + 1), ResourceWellSiteSprite, EnemyResourceWellPositions[i], 4);
+                marker.transform.SetParent(facilityMarkerRoot, true);
+                marker.transform.localScale = Vector3.one * 0.72f;
+                marker.color = new Color(1f, 0.48f, 0.34f, 0.72f);
+            }
         }
 
         private void CreateLaneMarker(int laneIndex)
@@ -993,6 +1309,7 @@ namespace WarOfEras.Battle.Core
             BuildStartHintPanel(root);
             BuildStatusPanel(root);
             BuildCommandPanel(root);
+            BuildOutcomeOverlay(canvasObject.transform);
         }
 
         private void BuildTopHud(RectTransform root)
@@ -1134,6 +1451,7 @@ namespace WarOfEras.Battle.Core
             }
 
             towerButton = CreateButton(panel, "Tower", FormatTowerButtonLabel(), TryBuildTower, new Color(0.31f, 0.43f, 0.45f, 1f));
+            resourceWellButton = CreateButton(panel, "Resource Well", FormatResourceWellButtonLabel(), TryBuildResourceWell, new Color(0.24f, 0.46f, 0.36f, 1f));
             agePowerButton = CreateButton(panel, "Age Power", AgePowers[ageIndex].DisplayName, UseAgePower, new Color(0.58f, 0.31f, 0.18f, 1f));
             shieldButton = CreateButton(panel, "Shield Barrier", "\u62a4\u76fe\u5c4f\u969c", UseShieldBarrier, new Color(0.24f, 0.42f, 0.58f, 1f));
             mobilizationButton = CreateButton(panel, "Mobilization", "\u6218\u4e89\u52a8\u5458", UseMobilization, new Color(0.52f, 0.44f, 0.18f, 1f));
@@ -1158,6 +1476,105 @@ namespace WarOfEras.Battle.Core
             statusText.rectTransform.offsetMax = new Vector2(-16f, -12f);
         }
 
+        private void BuildOutcomeOverlay(Transform canvasRoot)
+        {
+            outcomeOverlay = CreateRect("Outcome Overlay", canvasRoot);
+            outcomeOverlay.anchorMin = Vector2.zero;
+            outcomeOverlay.anchorMax = Vector2.one;
+            outcomeOverlay.offsetMin = Vector2.zero;
+            outcomeOverlay.offsetMax = Vector2.zero;
+            outcomeOverlay.gameObject.SetActive(false);
+
+            var backdropRect = CreateRect("Outcome Backdrop", outcomeOverlay);
+            backdropRect.anchorMin = Vector2.zero;
+            backdropRect.anchorMax = Vector2.one;
+            backdropRect.offsetMin = Vector2.zero;
+            backdropRect.offsetMax = Vector2.zero;
+            outcomeBackdropImage = backdropRect.gameObject.AddComponent<Image>();
+            outcomeBackdropImage.sprite = WhiteSprite;
+            outcomeBackdropImage.color = Color.white;
+            outcomeBackdropImage.preserveAspect = false;
+            outcomeBackdropImage.raycastTarget = true;
+
+            var shade = CreateRect("Outcome Shade", outcomeOverlay);
+            shade.anchorMin = Vector2.zero;
+            shade.anchorMax = Vector2.one;
+            shade.offsetMin = Vector2.zero;
+            shade.offsetMax = Vector2.zero;
+            var shadeImage = shade.gameObject.AddComponent<Image>();
+            shadeImage.sprite = WhiteSprite;
+            shadeImage.color = new Color(0.015f, 0.012f, 0.01f, 0.44f);
+            shadeImage.raycastTarget = true;
+
+            var topFade = CreateRect("Outcome Top Fade", outcomeOverlay);
+            topFade.anchorMin = new Vector2(0f, 0.64f);
+            topFade.anchorMax = Vector2.one;
+            topFade.offsetMin = Vector2.zero;
+            topFade.offsetMax = Vector2.zero;
+            var topFadeImage = topFade.gameObject.AddComponent<Image>();
+            topFadeImage.sprite = WhiteSprite;
+            topFadeImage.color = new Color(0f, 0f, 0f, 0.22f);
+            topFadeImage.raycastTarget = false;
+
+            outcomeTitleShadowText = CreateText(outcomeOverlay, "Outcome Title Shadow", string.Empty, 86, FontStyle.Bold, TextAnchor.MiddleCenter);
+            outcomeTitleShadowText.color = new Color(0f, 0f, 0f, 0.82f);
+            outcomeTitleShadowText.resizeTextForBestFit = true;
+            outcomeTitleShadowText.resizeTextMinSize = 42;
+            outcomeTitleShadowText.resizeTextMaxSize = 86;
+            outcomeTitleShadowText.rectTransform.anchorMin = new Vector2(0.08f, 0.54f);
+            outcomeTitleShadowText.rectTransform.anchorMax = new Vector2(0.92f, 0.76f);
+            outcomeTitleShadowText.rectTransform.offsetMin = new Vector2(5f, -6f);
+            outcomeTitleShadowText.rectTransform.offsetMax = new Vector2(5f, -6f);
+
+            outcomeTitleText = CreateText(outcomeOverlay, "Outcome Title", string.Empty, 86, FontStyle.Bold, TextAnchor.MiddleCenter);
+            outcomeTitleText.resizeTextForBestFit = true;
+            outcomeTitleText.resizeTextMinSize = 42;
+            outcomeTitleText.resizeTextMaxSize = 86;
+            outcomeTitleText.rectTransform.anchorMin = new Vector2(0.08f, 0.54f);
+            outcomeTitleText.rectTransform.anchorMax = new Vector2(0.92f, 0.76f);
+            outcomeTitleText.rectTransform.offsetMin = Vector2.zero;
+            outcomeTitleText.rectTransform.offsetMax = Vector2.zero;
+
+            outcomeSubtitleText = CreateText(outcomeOverlay, "Outcome Subtitle", string.Empty, 30, FontStyle.Bold, TextAnchor.MiddleCenter);
+            outcomeSubtitleText.resizeTextForBestFit = true;
+            outcomeSubtitleText.resizeTextMinSize = 16;
+            outcomeSubtitleText.resizeTextMaxSize = 30;
+            outcomeSubtitleText.color = new Color(0.95f, 0.9f, 0.78f, 1f);
+            outcomeSubtitleText.rectTransform.anchorMin = new Vector2(0.12f, 0.44f);
+            outcomeSubtitleText.rectTransform.anchorMax = new Vector2(0.88f, 0.54f);
+            outcomeSubtitleText.rectTransform.offsetMin = Vector2.zero;
+            outcomeSubtitleText.rectTransform.offsetMax = Vector2.zero;
+
+            outcomeStatsText = CreateText(outcomeOverlay, "Outcome Stats", string.Empty, 21, FontStyle.Bold, TextAnchor.MiddleCenter);
+            outcomeStatsText.resizeTextForBestFit = true;
+            outcomeStatsText.resizeTextMinSize = 13;
+            outcomeStatsText.resizeTextMaxSize = 21;
+            outcomeStatsText.color = new Color(0.78f, 0.84f, 0.78f, 1f);
+            outcomeStatsText.rectTransform.anchorMin = new Vector2(0.16f, 0.36f);
+            outcomeStatsText.rectTransform.anchorMax = new Vector2(0.84f, 0.43f);
+            outcomeStatsText.rectTransform.offsetMin = Vector2.zero;
+            outcomeStatsText.rectTransform.offsetMax = Vector2.zero;
+
+            var buttonRow = CreateRect("Outcome Button Row", outcomeOverlay);
+            buttonRow.anchorMin = new Vector2(0.5f, 0.22f);
+            buttonRow.anchorMax = new Vector2(0.5f, 0.22f);
+            buttonRow.pivot = new Vector2(0.5f, 0.5f);
+            buttonRow.sizeDelta = new Vector2(520f, 74f);
+            buttonRow.anchoredPosition = Vector2.zero;
+
+            var rowLayout = buttonRow.gameObject.AddComponent<HorizontalLayoutGroup>();
+            rowLayout.spacing = 18f;
+            rowLayout.childControlHeight = true;
+            rowLayout.childControlWidth = true;
+            rowLayout.childForceExpandHeight = true;
+            rowLayout.childForceExpandWidth = true;
+
+            var restart = CreateButton(buttonRow, "Outcome Restart", "\u518d\u6218\u4e00\u5c40", RestartBattle, new Color(0.55f, 0.24f, 0.16f, 1f));
+            restart.gameObject.AddComponent<LayoutElement>().minWidth = 248f;
+            var menu = CreateButton(buttonRow, "Outcome Main Menu", "\u8fd4\u56de\u4e3b\u83dc\u5355", ReturnToMainMenu, new Color(0.24f, 0.34f, 0.42f, 1f));
+            menu.gameObject.AddComponent<LayoutElement>().minWidth = 248f;
+        }
+
         private void SelectLane(int laneIndex)
         {
             selectedLane = Mathf.Clamp(laneIndex, 0, laneNames.Length - 1);
@@ -1169,6 +1586,12 @@ namespace WarOfEras.Battle.Core
             if (gameOver || definition == null)
             {
                 return;
+            }
+
+            if (activeBuildPlacement != BuildPlacementKind.None)
+            {
+                activeBuildPlacement = BuildPlacementKind.None;
+                ClearBuildPlacementPreviews();
             }
 
             if (activeRouteCandidate == null)
@@ -1184,6 +1607,212 @@ namespace WarOfEras.Battle.Core
             }
 
             DispatchUnitOnActiveRoute(definition);
+        }
+
+        private bool UpdateBuildPlacementInput()
+        {
+            if (activeBuildPlacement == BuildPlacementKind.None)
+            {
+                return false;
+            }
+
+            if (IsCancelPressed())
+            {
+                CancelBuildPlacement("\u5df2\u53d6\u6d88\u8bbe\u65bd\u5efa\u9020\u3002");
+                return true;
+            }
+
+            if (!IsPrimaryPointerPressed())
+            {
+                return true;
+            }
+
+            if (IsPointerOverUi())
+            {
+                return true;
+            }
+
+            var worldPoint = GetMouseWorldPoint();
+            if (TryGetBuildSlotAt(activeBuildPlacement, worldPoint, out var slotIndex))
+            {
+                ConfirmBuildPlacement(slotIndex);
+            }
+            else
+            {
+                status = "\u8bf7\u70b9\u51fb\u7ea2\u8272\u53ef\u5efa\u9020\u63d0\u793a\uff0c\u6309 Esc \u53d6\u6d88\u3002";
+            }
+
+            return true;
+        }
+
+        private void BeginBuildPlacement(BuildPlacementKind kind)
+        {
+            if (!gameStarted || gameOver)
+            {
+                return;
+            }
+
+            if (!HasAvailableBuildSlot(kind))
+            {
+                status = GetBuildPlacementName(kind) + "\u6ca1\u6709\u53ef\u7528\u7a7a\u4f4d\u3002";
+                return;
+            }
+
+            var cost = GetBuildPlacementCost(kind);
+            if (coins < cost)
+            {
+                status = "\u91d1\u5e01\u4e0d\u8db3\uff0c\u8fd8\u4e0d\u80fd\u5efa\u9020" + GetBuildPlacementName(kind) + "\u3002";
+                return;
+            }
+
+            activeBuildPlacement = kind;
+            ClearRoutePreviews();
+            ShowBuildPlacementPreviews(kind);
+            status = "\u5df2\u8fdb\u5165" + GetBuildPlacementName(kind) + "\u653e\u7f6e\u6a21\u5f0f\uff1a\u70b9\u51fb\u7ea2\u8272\u63d0\u793a\u4f4d\u786e\u8ba4\u5efa\u9020\uff0c\u6309 Esc \u53d6\u6d88\u3002";
+        }
+
+        private void ConfirmBuildPlacement(int slotIndex)
+        {
+            var kind = activeBuildPlacement;
+            if (kind == BuildPlacementKind.None)
+            {
+                return;
+            }
+
+            var cost = GetBuildPlacementCost(kind);
+            if (coins < cost)
+            {
+                status = "\u91d1\u5e01\u4e0d\u8db3\uff0c\u5efa\u9020\u5df2\u4fdd\u7559\uff0c\u53ef\u7a0d\u540e\u518d\u9009\u4f4d\u3002";
+                return;
+            }
+
+            coins -= cost;
+            if (kind == BuildPlacementKind.Tower)
+            {
+                BuildTowerAt(slotIndex);
+            }
+            else if (kind == BuildPlacementKind.ResourceWell)
+            {
+                BuildResourceWellAt(slotIndex);
+            }
+
+            activeBuildPlacement = BuildPlacementKind.None;
+            ClearBuildPlacementPreviews();
+        }
+
+        private void CancelBuildPlacement(string message)
+        {
+            activeBuildPlacement = BuildPlacementKind.None;
+            ClearBuildPlacementPreviews();
+            status = message;
+        }
+
+        private void ShowBuildPlacementPreviews(BuildPlacementKind kind)
+        {
+            ClearBuildPlacementPreviews();
+
+            var positions = GetBuildPlacementPositions(kind);
+            for (var i = 0; i < positions.Length; i++)
+            {
+                if (!IsBuildSlotAvailable(kind, i))
+                {
+                    continue;
+                }
+
+                var marker = CreateSprite(GetBuildPlacementName(kind) + " Build Prompt " + (i + 1), VfxCircleSprite, positions[i], 92 + i);
+                marker.transform.SetParent(buildPreviewRoot, true);
+                marker.transform.localScale = Vector3.one * (kind == BuildPlacementKind.ResourceWell ? 0.86f : 0.74f);
+                marker.color = new Color(1f, 0.08f, 0.04f, 0.72f);
+                marker.gameObject.AddComponent<BattleBuildPromptPulse>().Configure(0.82f, 1.18f, 2.7f);
+                buildPlacementPreviews.Add(new BuildPlacementPreview(marker.gameObject, i));
+            }
+        }
+
+        private void ClearBuildPlacementPreviews()
+        {
+            for (var i = 0; i < buildPlacementPreviews.Count; i++)
+            {
+                if (buildPlacementPreviews[i].Root != null)
+                {
+                    Destroy(buildPlacementPreviews[i].Root);
+                }
+            }
+
+            buildPlacementPreviews.Clear();
+        }
+
+        private bool TryGetBuildSlotAt(BuildPlacementKind kind, Vector3 worldPoint, out int slotIndex)
+        {
+            slotIndex = -1;
+            var positions = GetBuildPlacementPositions(kind);
+            var bestDistance = BuildPlacementClickRadius;
+            for (var i = 0; i < positions.Length; i++)
+            {
+                if (!IsBuildSlotAvailable(kind, i))
+                {
+                    continue;
+                }
+
+                var distance = Vector2.Distance(worldPoint, positions[i]);
+                if (distance <= bestDistance)
+                {
+                    bestDistance = distance;
+                    slotIndex = i;
+                }
+            }
+
+            return slotIndex >= 0;
+        }
+
+        private bool HasAvailableBuildSlot(BuildPlacementKind kind)
+        {
+            var positions = GetBuildPlacementPositions(kind);
+            for (var i = 0; i < positions.Length; i++)
+            {
+                if (IsBuildSlotAvailable(kind, i))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsBuildSlotAvailable(BuildPlacementKind kind, int slotIndex)
+        {
+            if (kind == BuildPlacementKind.Tower)
+            {
+                return slotIndex >= 0 && slotIndex < playerTowers.Length && playerTowers[slotIndex] == null;
+            }
+
+            if (kind == BuildPlacementKind.ResourceWell)
+            {
+                return slotIndex >= 0 && slotIndex < playerResourceWells.Length && !playerResourceWells[slotIndex];
+            }
+
+            return false;
+        }
+
+        private static Vector3[] GetBuildPlacementPositions(BuildPlacementKind kind)
+        {
+            return kind == BuildPlacementKind.ResourceWell ? PlayerResourceWellPositions : PlayerTowerPositions;
+        }
+
+        private int GetBuildPlacementCost(BuildPlacementKind kind)
+        {
+            return kind == BuildPlacementKind.ResourceWell
+                ? ResourceWellCost
+                : currentTowerDefinition != null ? currentTowerDefinition.Cost : 0;
+        }
+
+        private string GetBuildPlacementName(BuildPlacementKind kind)
+        {
+            if (kind == BuildPlacementKind.ResourceWell)
+            {
+                return "\u8d44\u6e90\u4e95";
+            }
+
+            return currentTowerDefinition != null ? currentTowerDefinition.DisplayName : "\u70ae\u5854";
         }
 
         private void UpdateRoutePlanningInput()
@@ -1258,7 +1887,13 @@ namespace WarOfEras.Battle.Core
         private static float GetScrollDelta()
         {
 #if ENABLE_INPUT_SYSTEM
-            return Mouse.current != null ? Mouse.current.scroll.ReadValue().y / 120f : 0f;
+            if (Mouse.current == null)
+            {
+                return 0f;
+            }
+
+            var scrollY = Mouse.current.scroll.ReadValue().y;
+            return Mathf.Abs(scrollY) >= 10f ? scrollY / 120f : scrollY;
 #else
             return Input.mouseScrollDelta.y;
 #endif
@@ -1686,6 +2321,11 @@ namespace WarOfEras.Battle.Core
             return "\u5efa\u9020" + currentTowerDefinition.DisplayName + "\n" + currentTowerDefinition.Cost + " \u91d1\u5e01";
         }
 
+        private string FormatResourceWellButtonLabel()
+        {
+            return "\u5efa\u9020\u8d44\u6e90\u4e95\n" + ResourceWellCost + " \u91d1\u5e01";
+        }
+
         private string GetEvolutionPathLabel()
         {
             switch (evolutionPath)
@@ -1713,6 +2353,7 @@ namespace WarOfEras.Battle.Core
             }
 
             SetButtonLabel(towerButton, FormatTowerButtonLabel());
+            SetButtonLabel(resourceWellButton, FormatResourceWellButtonLabel());
             SetButtonLabel(agePowerButton, AgePowers[ageIndex].DisplayName);
         }
 
@@ -1746,21 +2387,129 @@ namespace WarOfEras.Battle.Core
 
         private void TryBuildTower()
         {
-            if (gameOver || currentTowerDefinition == null || coins < currentTowerDefinition.Cost || playerTowers[selectedLane] != null)
+            if (currentTowerDefinition == null)
             {
                 return;
             }
 
-            coins -= currentTowerDefinition.Cost;
-            GainEraValue(currentTowerDefinition.Cost * 0.32f);
-            var towerObject = new GameObject(currentTowerDefinition.DisplayName + " - " + laneNames[selectedLane]);
+            BeginBuildPlacement(BuildPlacementKind.Tower);
+        }
+
+        private void TryBuildResourceWell()
+        {
+            BeginBuildPlacement(BuildPlacementKind.ResourceWell);
+        }
+
+        private void BuildTowerAt(int slotIndex)
+        {
+            if (currentTowerDefinition == null || slotIndex < 0 || slotIndex >= playerTowers.Length || playerTowers[slotIndex] != null)
+            {
+                return;
+            }
+
+            var towerObject = new GameObject(currentTowerDefinition.DisplayName + " - " + laneNames[slotIndex]);
             towerObject.transform.SetParent(worldRoot, false);
-            towerObject.transform.position = GetPlayerTowerPosition(selectedLane);
+            towerObject.transform.position = GetPlayerTowerPosition(slotIndex);
 
             var tower = towerObject.AddComponent<BattleTower>();
-            tower.Configure(this, selectedLane, currentTowerDefinition, towerFrames);
-            playerTowers[selectedLane] = tower;
-            status = "\u5df2\u5728" + laneNames[selectedLane] + "\u5efa\u9020" + currentTowerDefinition.DisplayName + "\u3002";
+            tower.Configure(this, slotIndex, 0, currentTowerDefinition, towerFrames);
+            playerTowers[slotIndex] = tower;
+            selectedLane = slotIndex;
+            GainEraValue(currentTowerDefinition.Cost * 0.32f);
+            status = "\u5df2\u5728" + laneNames[slotIndex] + "\u5efa\u9020" + currentTowerDefinition.DisplayName + "\u3002";
+        }
+
+        private void BuildResourceWellAt(int slotIndex)
+        {
+            if (slotIndex < 0 || slotIndex >= playerResourceWells.Length || playerResourceWells[slotIndex])
+            {
+                return;
+            }
+
+            playerResourceWells[slotIndex] = true;
+            incomePerSecond += ResourceWellIncomeBonus;
+            GainEraValue(ResourceWellEraValue);
+
+            var well = CreateSprite("Player Resource Well " + (slotIndex + 1), ResourceWellBuiltSprite, PlayerResourceWellPositions[slotIndex], 8);
+            well.transform.SetParent(facilityMarkerRoot, true);
+            well.transform.localScale = Vector3.one * ResourceWellVisualScale;
+            well.color = Color.white;
+            status = "\u5df2\u5efa\u6210\u8d44\u6e90\u4e95\uff0c\u91d1\u5e01\u4ea7\u51fa +" + ResourceWellIncomeBonus.ToString("0.#") + "/s\u3002";
+        }
+
+        private int CountBuiltResourceWells(bool[] resourceWells)
+        {
+            var count = 0;
+            for (var i = 0; i < resourceWells.Length; i++)
+            {
+                if (resourceWells[i])
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private void UpdateEnemyFacilities()
+        {
+            if (elapsedTime >= 28f)
+            {
+                BuildEnemyResourceWellAt(0);
+            }
+
+            if (elapsedTime >= 55f)
+            {
+                BuildEnemyTowerAt(1);
+            }
+
+            if (elapsedTime >= 82f)
+            {
+                BuildEnemyResourceWellAt(1);
+            }
+
+            if (elapsedTime >= 115f)
+            {
+                BuildEnemyTowerAt(0);
+            }
+
+            if (elapsedTime >= 150f)
+            {
+                BuildEnemyTowerAt(2);
+            }
+        }
+
+        private void BuildEnemyTowerAt(int slotIndex)
+        {
+            if (currentTowerDefinition == null || slotIndex < 0 || slotIndex >= enemyTowers.Length || enemyTowers[slotIndex] != null)
+            {
+                return;
+            }
+
+            var towerObject = new GameObject("Enemy " + currentTowerDefinition.DisplayName + " - " + laneNames[slotIndex]);
+            towerObject.transform.SetParent(worldRoot, false);
+            towerObject.transform.position = GetEnemyTowerPosition(slotIndex);
+
+            var tower = towerObject.AddComponent<BattleTower>();
+            tower.Configure(this, slotIndex, 1, currentTowerDefinition, towerFrames);
+            enemyTowers[slotIndex] = tower;
+            status = "\u654c\u65b9\u5728" + laneNames[slotIndex] + "\u5efa\u8d77\u4e86" + currentTowerDefinition.DisplayName + "\u3002";
+        }
+
+        private void BuildEnemyResourceWellAt(int slotIndex)
+        {
+            if (slotIndex < 0 || slotIndex >= enemyResourceWells.Length || enemyResourceWells[slotIndex])
+            {
+                return;
+            }
+
+            enemyResourceWells[slotIndex] = true;
+            var well = CreateSprite("Enemy Resource Well " + (slotIndex + 1), ResourceWellBuiltSprite, EnemyResourceWellPositions[slotIndex], 8);
+            well.transform.SetParent(facilityMarkerRoot, true);
+            well.transform.localScale = Vector3.one * ResourceWellVisualScale;
+            well.flipX = true;
+            well.color = new Color(1f, 0.72f, 0.62f, 1f);
+            status = "\u654c\u65b9\u5efa\u6210\u4e86\u8d44\u6e90\u4e95\u3002";
         }
 
         private void SpawnUnit(
@@ -2072,7 +2821,7 @@ namespace WarOfEras.Battle.Core
             ageIndex++;
             evolutionPath = path;
             eraValue = 0f;
-            incomePerSecond = GameSession.IncomePerSecond + ageIndex * 2f;
+            incomePerSecond = GameSession.IncomePerSecond + ageIndex * 2f + CountBuiltResourceWells(playerResourceWells) * ResourceWellIncomeBonus;
             playerBaseMaxHealth = BaseHealthByAge[ageIndex];
             enemyBaseMaxHealth = BaseHealthByAge[ageIndex];
             var healRatio = path == EvolutionPath.Defense ? 0.75f : 0.55f;
@@ -2095,6 +2844,7 @@ namespace WarOfEras.Battle.Core
             ClearRoutePreviews();
             BuildDefinitions();
             UpdateUnitButtonDefinitions();
+            SwitchEraAmbience(ageIndex, false);
             var pathName = path == EvolutionPath.Attack ? AttackPathNames[ageIndex - 1] : DefensePathNames[ageIndex - 1];
             status = "\u9009\u62e9\u300c" + pathName + "\u300d\uff0c\u8fdb\u5165" + AgeNames[ageIndex] + "\u3002";
         }
@@ -2168,12 +2918,73 @@ namespace WarOfEras.Battle.Core
             SceneManager.LoadScene(BattleSceneName);
         }
 
+        private void ReturnToMainMenu()
+        {
+            SceneManager.LoadScene(MainMenuSceneName);
+        }
+
         private void EndGame(bool playerWon)
         {
             gameOver = true;
+            activeRouteCandidate = null;
+            activeBuildPlacement = BuildPlacementKind.None;
+            ClearRoutePreviews();
+            ClearBuildPlacementPreviews();
             status = playerWon
                 ? "\u80dc\u5229\uff01\u86ee\u8352\u90e8\u843d\u653b\u7834\u4e86\u654c\u65b9\u57fa\u5730\u3002"
                 : "\u5931\u8d25\uff1a\u6211\u65b9\u57fa\u5730\u5df2\u88ab\u653b\u7834\u3002";
+            ShowOutcomeOverlay(playerWon);
+        }
+
+        private void ShowOutcomeOverlay(bool playerWon)
+        {
+            if (outcomeOverlay == null)
+            {
+                return;
+            }
+
+            outcomeOverlay.SetAsLastSibling();
+            outcomeOverlay.gameObject.SetActive(true);
+
+            if (outcomeBackdropImage != null)
+            {
+                outcomeBackdropImage.sprite = LoadSprite(playerWon ? VictoryBackdropPath : DefeatBackdropPath, 100f);
+                outcomeBackdropImage.color = Color.white;
+            }
+
+            var title = playerWon ? "\u80dc\u5229" : "\u5931\u8d25";
+            if (outcomeTitleShadowText != null)
+            {
+                outcomeTitleShadowText.text = title;
+            }
+
+            if (outcomeTitleText != null)
+            {
+                outcomeTitleText.text = title;
+                outcomeTitleText.color = playerWon
+                    ? new Color(1f, 0.86f, 0.38f, 1f)
+                    : new Color(1f, 0.22f, 0.16f, 1f);
+            }
+
+            if (outcomeSubtitleText != null)
+            {
+                outcomeSubtitleText.text = playerWon
+                    ? "\u654c\u65b9\u57fa\u5730\u5df2\u88ab\u653b\u7834\uff0c\u6218\u7ebf\u63a8\u8fdb\u6210\u529f"
+                    : "\u6211\u65b9\u57fa\u5730\u5df2\u88ab\u653b\u7834\uff0c\u6218\u7ebf\u5168\u9762\u5931\u5b88";
+            }
+
+            if (outcomeStatsText != null)
+            {
+                outcomeStatsText.text = "\u7528\u65f6 " + FormatBattleDuration()
+                    + "    \u65f6\u4ee3 " + AgeNames[ageIndex]
+                    + "    \u91d1\u5e01 " + Mathf.FloorToInt(coins);
+            }
+        }
+
+        private string FormatBattleDuration()
+        {
+            var totalSeconds = Mathf.Max(0, Mathf.FloorToInt(elapsedTime));
+            return (totalSeconds / 60).ToString("00") + ":" + (totalSeconds % 60).ToString("00");
         }
 
         private void RefreshHud()
@@ -2227,6 +3038,10 @@ namespace WarOfEras.Battle.Core
                 {
                     laneText.text = "\u70b9\u51fb\u5730\u56fe\u4efb\u610f\u4f4d\u7f6e\u5f00\u59cb\u6218\u6597\n\u53f3\u952e\u62d6\u52a8\u89c6\u91ce\n\u9f20\u6807\u9760\u8fd1\u8fb9\u7f18\u6eda\u52a8\u5730\u56fe";
                 }
+                else if (activeBuildPlacement != BuildPlacementKind.None)
+                {
+                    laneText.text = "\u5efa\u9020" + GetBuildPlacementName(activeBuildPlacement) + "\u4e2d\n\u70b9\u51fb\u7ea2\u8272\u53ef\u5efa\u9020\u4f4d\nEsc \u53d6\u6d88\u672c\u6b21\u5efa\u9020";
+                }
                 else if (activeRouteCandidate != null)
                 {
                     laneText.text = "\u8def\u7ebf\u5df2\u9501\u5b9a\n\u70b9\u51fb\u4e0b\u65b9\u5175\u79cd\u8fde\u7eed\u6d3e\u5175\nEsc \u53d6\u6d88\u5f53\u524d\u8def\u7ebf";
@@ -2269,7 +3084,26 @@ namespace WarOfEras.Battle.Core
             if (towerButton != null)
             {
                 SetButtonLabel(towerButton, FormatTowerButtonLabel());
-                towerButton.interactable = gameStarted && !gameOver && currentTowerDefinition != null && coins >= currentTowerDefinition.Cost && playerTowers[selectedLane] == null;
+                towerButton.interactable = gameStarted
+                    && !gameOver
+                    && currentTowerDefinition != null
+                    && coins >= currentTowerDefinition.Cost
+                    && HasAvailableBuildSlot(BuildPlacementKind.Tower);
+                SetButtonColor(towerButton, activeBuildPlacement == BuildPlacementKind.Tower
+                    ? new Color(0.78f, 0.16f, 0.1f, 1f)
+                    : new Color(0.31f, 0.43f, 0.45f, 1f));
+            }
+
+            if (resourceWellButton != null)
+            {
+                SetButtonLabel(resourceWellButton, FormatResourceWellButtonLabel());
+                resourceWellButton.interactable = gameStarted
+                    && !gameOver
+                    && coins >= ResourceWellCost
+                    && HasAvailableBuildSlot(BuildPlacementKind.ResourceWell);
+                SetButtonColor(resourceWellButton, activeBuildPlacement == BuildPlacementKind.ResourceWell
+                    ? new Color(0.78f, 0.16f, 0.1f, 1f)
+                    : new Color(0.24f, 0.46f, 0.36f, 1f));
             }
 
             SetCooldownButton(agePowerButton, agePowerCooldown, AgePowers[ageIndex].DisplayName, gameStarted && !gameOver);
@@ -2430,6 +3264,11 @@ namespace WarOfEras.Battle.Core
                 return "\u5854";
             }
 
+            if (name.Contains("Well"))
+            {
+                return "\u4e95";
+            }
+
             if (name.Contains("Power"))
             {
                 return "\u672f";
@@ -2458,6 +3297,11 @@ namespace WarOfEras.Battle.Core
             if (name.Contains("Restart"))
             {
                 return "\u56de";
+            }
+
+            if (name.Contains("Menu"))
+            {
+                return "\u8fd4";
             }
 
             return "\u5175";
@@ -2589,6 +3433,32 @@ namespace WarOfEras.Battle.Core
             }
         }
 
+        private static Sprite ResourceWellSiteSprite
+        {
+            get
+            {
+                if (resourceWellSiteSprite == null)
+                {
+                    resourceWellSiteSprite = CreateResourceWellSiteSprite(96);
+                }
+
+                return resourceWellSiteSprite;
+            }
+        }
+
+        private static Sprite ResourceWellBuiltSprite
+        {
+            get
+            {
+                if (resourceWellBuiltSprite == null)
+                {
+                    resourceWellBuiltSprite = CreateResourceWellBuiltSprite(128);
+                }
+
+                return resourceWellBuiltSprite;
+            }
+        }
+
         private static Sprite WhiteSprite
         {
             get
@@ -2707,6 +3577,101 @@ namespace WarOfEras.Battle.Core
             return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
+        private static Sprite CreateResourceWellSiteSprite(int size)
+        {
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+
+            var center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
+            var half = size * 0.5f;
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var dx = (x - center.x) / half;
+                    var dy = (y - center.y) / half;
+                    var distance = Mathf.Sqrt(dx * dx + dy * dy);
+                    var diamond = Mathf.Abs(dx) + Mathf.Abs(dy);
+                    var alpha = 0f;
+
+                    if (distance > 0.36f && distance < 0.46f)
+                    {
+                        alpha = Mathf.Max(alpha, 0.82f);
+                    }
+
+                    if (diamond > 0.62f && diamond < 0.72f)
+                    {
+                        alpha = Mathf.Max(alpha, 0.62f);
+                    }
+
+                    if (Mathf.Abs(dx) < 0.045f && Mathf.Abs(dy) < 0.32f)
+                    {
+                        alpha = Mathf.Max(alpha, 0.7f);
+                    }
+
+                    if (Mathf.Abs(dy) < 0.045f && Mathf.Abs(dx) < 0.32f)
+                    {
+                        alpha = Mathf.Max(alpha, 0.7f);
+                    }
+
+                    if (distance < 0.12f)
+                    {
+                        alpha = Mathf.Max(alpha, 0.9f);
+                    }
+
+                    texture.SetPixel(x, y, alpha > 0f ? new Color(1f, 1f, 1f, alpha) : Color.clear);
+                }
+            }
+
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        private static Sprite CreateResourceWellBuiltSprite(int size)
+        {
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+
+            var center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.45f);
+            var half = size * 0.5f;
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var dx = (x - center.x) / half;
+                    var dy = (y - center.y) / half;
+                    var body = dx * dx / 0.48f + dy * dy / 0.24f;
+                    var inner = dx * dx / 0.26f + dy * dy / 0.1f;
+                    var post = Mathf.Abs(dx) > 0.3f && Mathf.Abs(dx) < 0.42f && dy > -0.06f && dy < 0.48f;
+                    var roof = Mathf.Abs(dy - 0.5f) < 0.08f && Mathf.Abs(dx) < 0.5f - Mathf.Abs(dy - 0.5f);
+
+                    if (inner <= 1f)
+                    {
+                        var shimmer = 0.08f * Mathf.Sin((x + y) * 0.18f);
+                        texture.SetPixel(x, y, new Color(0.16f + shimmer, 0.54f + shimmer, 0.78f + shimmer, 0.96f));
+                    }
+                    else if (body <= 1f || post || roof)
+                    {
+                        var shade = Mathf.Clamp01(0.58f + 0.12f * Mathf.Sin((x * 3f + y * 5f) * 0.05f) - Mathf.Abs(dy) * 0.1f);
+                        texture.SetPixel(x, y, new Color(shade, shade * 0.92f, shade * 0.76f, 1f));
+                    }
+                    else if (body <= 1.18f)
+                    {
+                        texture.SetPixel(x, y, new Color(0.08f, 0.06f, 0.04f, 0.36f));
+                    }
+                    else
+                    {
+                        texture.SetPixel(x, y, Color.clear);
+                    }
+                }
+            }
+
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
+        }
+
         private static bool IsInsideRoundedRect(int x, int y, int width, int height, int radius)
         {
             var cornerX = x < radius ? radius : width - 1 - radius;
@@ -2783,6 +3748,18 @@ namespace WarOfEras.Battle.Core
 
             public GameObject Root { get; }
             public RouteCandidate Candidate { get; }
+        }
+
+        private sealed class BuildPlacementPreview
+        {
+            public BuildPlacementPreview(GameObject root, int slotIndex)
+            {
+                Root = root;
+                SlotIndex = slotIndex;
+            }
+
+            public GameObject Root { get; }
+            public int SlotIndex { get; }
         }
     }
 
@@ -2929,6 +3906,44 @@ namespace WarOfEras.Battle.Core
         }
     }
 
+    public sealed class BattleBuildPromptPulse : MonoBehaviour
+    {
+        private SpriteRenderer spriteRenderer;
+        private Vector3 baseScale;
+        private Color baseColor;
+        private float minScale = 0.85f;
+        private float maxScale = 1.15f;
+        private float pulseSpeed = 2.4f;
+
+        public void Configure(float minimumScale, float maximumScale, float speed)
+        {
+            minScale = minimumScale;
+            maxScale = maximumScale;
+            pulseSpeed = speed;
+            baseScale = transform.localScale;
+            spriteRenderer = GetComponent<SpriteRenderer>();
+            baseColor = spriteRenderer != null ? spriteRenderer.color : Color.white;
+        }
+
+        private void Update()
+        {
+            if (baseScale == Vector3.zero)
+            {
+                baseScale = transform.localScale;
+            }
+
+            var wave = (Mathf.Sin(Time.time * pulseSpeed) + 1f) * 0.5f;
+            transform.localScale = baseScale * Mathf.Lerp(minScale, maxScale, wave);
+
+            if (spriteRenderer != null)
+            {
+                var color = baseColor;
+                color.a = baseColor.a * Mathf.Lerp(0.68f, 1f, wave);
+                spriteRenderer.color = color;
+            }
+        }
+    }
+
     public sealed class TowerDefinition
     {
         public TowerDefinition(string displayName, int cost, float damage, float attackInterval, float range, Color tint)
@@ -2973,7 +3988,11 @@ namespace WarOfEras.Battle.Core
 
     public sealed class BattleUnit : MonoBehaviour
     {
+        private const float AttackImpulseDuration = 0.18f;
+        private const float HitReactionDuration = 0.22f;
+
         private BattleGameController controller;
+        private Transform visualRoot;
         private SpriteRenderer spriteRenderer;
         private SpriteRenderer shadowRenderer;
         private Vector3[] routePoints;
@@ -2984,6 +4003,10 @@ namespace WarOfEras.Battle.Core
         private float attackTimer;
         private float frameTimer;
         private float hitFlash;
+        private float attackImpulseTimer;
+        private float hitReactionTimer;
+        private float attackImpulseDirection;
+        private float hitReactionDirection;
         private float statusTimer;
         private float statusSpeedMultiplier = 1f;
         private float statusAttackIntervalMultiplier = 1f;
@@ -3027,7 +4050,11 @@ namespace WarOfEras.Battle.Core
 
             CreateGroundShadow();
 
-            spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
+            var visualObject = new GameObject("Unit Visual", typeof(SpriteRenderer));
+            visualObject.transform.SetParent(transform, false);
+            visualRoot = visualObject.transform;
+
+            spriteRenderer = visualObject.GetComponent<SpriteRenderer>();
             spriteRenderer.sprite = definition.MoveFrames[0];
             holdSprite = spriteRenderer.sprite;
             spriteRenderer.flipX = team == 1;
@@ -3038,18 +4065,20 @@ namespace WarOfEras.Battle.Core
 
         private void Update()
         {
-            if (controller == null || !IsAlive)
+            if (controller == null || !IsAlive || controller.IsGameOver)
             {
                 return;
             }
 
             attackTimer -= Time.deltaTime;
             hitFlash = Mathf.Max(0f, hitFlash - Time.deltaTime);
+            attackImpulseTimer = Mathf.Max(0f, attackImpulseTimer - Time.deltaTime);
+            hitReactionTimer = Mathf.Max(0f, hitReactionTimer - Time.deltaTime);
             UpdateStatusEffect();
             attacking = false;
 
             var target = controller.FindNearestEnemy(this);
-            if (target != null && Vector2.Distance(target.transform.position, transform.position) <= Definition.AttackRange)
+            if (target != null && Vector2.Distance(target.transform.position, transform.position) <= BattleGameController.GetUnitEngageDistance(Definition))
             {
                 attacking = true;
                 TryAttackUnit(target);
@@ -3071,6 +4100,7 @@ namespace WarOfEras.Battle.Core
 
             UpdateAnimation();
             UpdateTint();
+            UpdateVisualPose();
             UpdateSorting();
         }
 
@@ -3082,7 +4112,9 @@ namespace WarOfEras.Battle.Core
             }
 
             health -= amount;
-            hitFlash = 0.12f;
+            hitFlash = 0.22f;
+            hitReactionTimer = HitReactionDuration;
+            hitReactionDirection = attackerTeam == 0 ? 1f : -1f;
 
             if (health <= 0f)
             {
@@ -3126,6 +4158,10 @@ namespace WarOfEras.Battle.Core
                 return;
             }
 
+            attackImpulseTimer = AttackImpulseDuration;
+            attackImpulseDirection = Team == 0 ? 1f : -1f;
+            var hitPosition = Vector3.Lerp(transform.position, target.transform.position, 0.58f);
+            controller.SpawnCombatHitEffect(hitPosition, Team, Definition.AttackRange > 1.3f);
             target.TakeDamage(damage, Team);
             attackTimer = Definition.AttackInterval * statusAttackIntervalMultiplier;
         }
@@ -3137,6 +4173,10 @@ namespace WarOfEras.Battle.Core
                 return;
             }
 
+            attackImpulseTimer = AttackImpulseDuration;
+            attackImpulseDirection = Team == 0 ? 1f : -1f;
+            var baseX = Team == 0 ? BattleGameController.EnemyBaseX : BattleGameController.PlayerBaseX;
+            controller.SpawnCombatHitEffect(new Vector3(baseX, transform.position.y, 0f), Team, Definition.AttackRange > 1.3f);
             controller.DamageBase(Team == 0 ? 1 : 0, damage);
             attackTimer = Definition.AttackInterval * statusAttackIntervalMultiplier;
         }
@@ -3222,6 +4262,36 @@ namespace WarOfEras.Battle.Core
             spriteRenderer.color = hitFlash > 0f ? Color.Lerp(baseColor, Color.red, 0.55f) : baseColor;
         }
 
+        private void UpdateVisualPose()
+        {
+            if (visualRoot == null)
+            {
+                return;
+            }
+
+            var parentScale = Mathf.Max(0.01f, transform.localScale.x);
+            var localOffset = Vector3.zero;
+            var rotation = 0f;
+
+            if (attackImpulseTimer > 0f)
+            {
+                var pulse = Mathf.Sin((attackImpulseTimer / AttackImpulseDuration) * Mathf.PI);
+                localOffset.x += attackImpulseDirection * pulse * 0.12f / parentScale;
+                rotation += attackImpulseDirection * pulse * -3.5f;
+            }
+
+            if (hitReactionTimer > 0f)
+            {
+                var pulse = Mathf.Sin((hitReactionTimer / HitReactionDuration) * Mathf.PI);
+                localOffset.x += hitReactionDirection * pulse * 0.08f / parentScale;
+                localOffset.y += pulse * 0.03f / parentScale;
+                rotation += hitReactionDirection * pulse * 4.5f;
+            }
+
+            visualRoot.localPosition = localOffset;
+            visualRoot.localRotation = Quaternion.Euler(0f, 0f, rotation);
+        }
+
         private Color GetBaseTint()
         {
             var tint = Definition != null ? Definition.Tint : Color.white;
@@ -3288,12 +4358,14 @@ namespace WarOfEras.Battle.Core
         private float attackTimer;
         private float frameTimer;
         private int laneIndex;
+        private int team;
         private int frameIndex;
 
-        public void Configure(BattleGameController owner, int lane, TowerDefinition towerDefinition, Sprite[] towerFrames)
+        public void Configure(BattleGameController owner, int lane, int towerTeam, TowerDefinition towerDefinition, Sprite[] towerFrames)
         {
             controller = owner;
             laneIndex = lane;
+            team = towerTeam;
             definition = towerDefinition;
             frames = towerFrames;
 
@@ -3303,13 +4375,19 @@ namespace WarOfEras.Battle.Core
             spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
             spriteRenderer.sprite = frames != null && frames.Length > 0 ? frames[0] : null;
             spriteRenderer.color = definition != null ? definition.Tint : new Color(1f, 0.94f, 0.78f, 1f);
+            spriteRenderer.flipX = team == 1;
+            if (team == 1)
+            {
+                spriteRenderer.color = Color.Lerp(spriteRenderer.color, new Color(1f, 0.42f, 0.32f, 1f), 0.38f);
+            }
+
             UpdateGroundShadow();
             UpdateSorting();
         }
 
         private void Update()
         {
-            if (controller == null)
+            if (controller == null || controller.IsGameOver)
             {
                 return;
             }
@@ -3323,7 +4401,7 @@ namespace WarOfEras.Battle.Core
             }
 
             var range = definition != null ? definition.Range : 3.4f;
-            var target = controller.FindTowerTarget(laneIndex, transform.position, range);
+            var target = controller.FindTowerTarget(team, laneIndex, transform.position, range);
             if (target == null)
             {
                 return;
@@ -3331,7 +4409,9 @@ namespace WarOfEras.Battle.Core
 
             var damage = definition != null ? definition.Damage : 34f;
             var interval = definition != null ? definition.AttackInterval : 1.05f;
-            target.TakeDamage(damage * controller.TowerDamageMultiplier, 0);
+            var multiplier = team == 0 ? controller.TowerDamageMultiplier : 1f;
+            controller.SpawnCombatHitEffect(target.transform.position, team, true);
+            target.TakeDamage(damage * multiplier, team);
             attackTimer = interval;
         }
 

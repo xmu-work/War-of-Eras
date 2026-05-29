@@ -16,9 +16,35 @@ namespace WarOfEras.MainMenu
         private const string MainMenuSceneName = "MainMenu";
         private const string BattleSceneName = "Battle";
         private const string CanvasName = "Main Menu Canvas";
-        private const string GameTitle = "\u6218\u7ebf\u8fdb\u5316\uff1a\u7eaa\u5143\u4e4b\u6218";
-        private const string MenuBackgroundResource = "Barbarian/Maps/ForestThreeLanes";
+        private const string MenuBackgroundResource = "MainMenu/Background";
+        private const string TitleLogoResource = "MainMenu/TitleLogo";
+        private const string FallbackBackgroundResource = "Barbarian/Maps/ForestThreeLanes";
         private const string BaseCrestResource = "Barbarian/Base/Base";
+
+        private static readonly Color ButtonNormalTint = new Color(0.76f, 0.9f, 1f, 1f);
+        private static readonly Color ButtonHoverTint = new Color(1f, 1f, 1f, 1f);
+        private static readonly Color PrimaryButtonTint = new Color(1f, 1f, 1f, 1f);
+        private static readonly Color SelectedButtonTint = new Color(0.62f, 1f, 0.78f, 1f);
+        private static readonly Color TextCyan = new Color(0.42f, 0.88f, 1f, 1f);
+        private static readonly Color TextLavender = new Color(0.9f, 0.78f, 1f, 1f);
+
+        private static readonly string[] EraNames =
+        {
+            "\u86ee\u8352\u90e8\u843d",
+            "\u673a\u68b0\u5de5\u574a",
+            "\u7535\u529b\u65f6\u4ee3",
+            "\u6838\u80fd\u7eaa\u5143",
+            "\u661f\u6d77\u6587\u660e"
+        };
+
+        private static readonly Color[] EraColors =
+        {
+            new Color(1f, 0.42f, 0.16f, 1f),
+            new Color(0.98f, 0.66f, 0.28f, 1f),
+            new Color(0.35f, 0.82f, 1f, 1f),
+            new Color(0.47f, 1f, 0.36f, 1f),
+            new Color(0.72f, 0.36f, 1f, 1f)
+        };
 
         private static Sprite whiteSprite;
         private static Sprite menuButtonSprite;
@@ -27,17 +53,14 @@ namespace WarOfEras.MainMenu
         private static Sprite iconButtonSprite;
         private static Sprite topFadeSprite;
         private static Sprite bottomFadeSprite;
+        private static Sprite dotSprite;
 
         private readonly List<DifficultyButtonBinding> difficultyButtons = new List<DifficultyButtonBinding>();
 
         private Font uiFont;
         private RectTransform contentRoot;
+        private RectTransform utilityRoot;
         private Button startButton;
-        private Button pulseButton;
-        private Image pulseButtonImage;
-        private Image leftLine;
-        private Image centerLine;
-        private Image rightLine;
         private Image titleAura;
         private BattleMapDefinition selectedMap;
         private GameDifficulty selectedDifficulty = GameDifficulty.Normal;
@@ -79,36 +102,14 @@ namespace WarOfEras.MainMenu
         private void Update()
         {
             var pulse = 0.5f + Mathf.Sin(Time.time * 2.2f) * 0.5f;
-            if (pulseButtonImage != null && pulseButton != null && pulseButton.interactable)
-            {
-                pulseButtonImage.color = Color.Lerp(
-                    new Color(0.94f, 0.78f, 0.58f, 1f),
-                    new Color(1f, 0.98f, 0.84f, 1f),
-                    pulse);
-            }
-
             if (titleAura != null)
             {
                 titleAura.color = Color.Lerp(
-                    new Color(0.9f, 0.32f, 0.08f, 0.12f),
-                    new Color(1f, 0.68f, 0.22f, 0.24f),
+                    new Color(0.12f, 0.62f, 1f, 0.12f),
+                    new Color(0.62f, 0.28f, 1f, 0.24f),
                     pulse);
             }
 
-            if (leftLine != null)
-            {
-                leftLine.fillAmount = Mathf.Lerp(0.34f, 1f, Mathf.PingPong(Time.time * 0.25f, 1f));
-            }
-
-            if (centerLine != null)
-            {
-                centerLine.fillAmount = Mathf.Lerp(0.48f, 1f, Mathf.PingPong(Time.time * 0.2f + 0.25f, 1f));
-            }
-
-            if (rightLine != null)
-            {
-                rightLine.fillAmount = Mathf.Lerp(0.38f, 1f, Mathf.PingPong(Time.time * 0.18f + 0.5f, 1f));
-            }
         }
 
         private void BuildMenu()
@@ -132,10 +133,16 @@ namespace WarOfEras.MainMenu
 
             BuildBackground(root);
             BuildTitle(root);
-            BuildSideActions(root);
+            BuildEraTimeline(root);
 
             contentRoot = CreateRect("Menu Content", root);
             SetContentBounds(0.32f, 0.1f, 0.68f, 0.58f);
+
+            utilityRoot = CreateRect("Menu Utility Actions", root);
+            utilityRoot.anchorMin = Vector2.zero;
+            utilityRoot.anchorMax = Vector2.one;
+            utilityRoot.offsetMin = Vector2.zero;
+            utilityRoot.offsetMax = Vector2.zero;
         }
 
         private void ShowHomeScreen()
@@ -143,31 +150,25 @@ namespace WarOfEras.MainMenu
             ClearContent();
             difficultyButtons.Clear();
             startButton = null;
-            pulseButton = null;
-            pulseButtonImage = null;
-            SetContentBounds(0.34f, 0.1f, 0.66f, 0.57f);
+            SetContentBounds(0.365f, 0.15f, 0.635f, 0.53f);
 
-            CreateHomeStatus();
-            CreateHomeMenuButton("\u5f00\u59cb\u6e38\u620f", StartGame, 0.72f, true);
-            CreateHomeMenuButton("\u9009\u62e9\u5730\u56fe", ShowMapSelectScreen, 0.54f, false);
-            CreateHomeMenuButton("\u96be\u5ea6\u8bbe\u7f6e", ShowDifficultyScreen, 0.36f, false);
-            CreateHomeMenuButton("\u6218\u7ee9\u6863\u6848", ShowArchiveScreen, 0.18f, false);
-            CreateHomeMenuButton("\u6e38\u620f\u8bbe\u7f6e", ShowSettingsScreen, 0f, false);
+            CreateHomeMenuButton("\u5f00\u59cb\u6e38\u620f", StartGame, 0.76f, true);
+            CreateHomeMenuButton("\u5730\u56fe\u9009\u62e9\uff1a" + selectedMap.DisplayName, ShowMapSelectScreen, 0.5f, false);
+            CreateHomeMenuButton("\u96be\u5ea6\u9009\u62e9\uff1a" + GameSession.DifficultyName, ShowDifficultyScreen, 0.24f, false);
+            CreateHomeUtilities();
         }
 
         private void ShowMapSelectScreen()
         {
             ClearContent();
-            pulseButton = null;
-            pulseButtonImage = null;
-            SetContentBounds(0.18f, 0.1f, 0.82f, 0.62f);
+            SetContentBounds(0.2f, 0.12f, 0.8f, 0.61f);
 
             CreateScreenTitle("\u9009\u62e9\u5730\u56fe");
 
             var maps = GameSession.AvailableMaps;
             for (var i = 0; i < maps.Count; i++)
             {
-                CreateMapCard(maps[i], i);
+                CreateMapCard(maps[i], i, maps.Count);
             }
 
             CreateBackButton(ShowHomeScreen);
@@ -184,10 +185,8 @@ namespace WarOfEras.MainMenu
         private void ShowDifficultyScreen()
         {
             ClearContent();
-            pulseButton = null;
-            pulseButtonImage = null;
             difficultyButtons.Clear();
-            SetContentBounds(0.2f, 0.1f, 0.8f, 0.62f);
+            SetContentBounds(0.2f, 0.12f, 0.8f, 0.61f);
 
             CreateScreenTitle("\u9009\u62e9\u6e38\u620f\u96be\u5ea6");
 
@@ -198,7 +197,7 @@ namespace WarOfEras.MainMenu
                 22,
                 FontStyle.Bold,
                 TextAnchor.MiddleCenter);
-            selectedMapText.color = new Color(0.95f, 0.9f, 0.78f, 1f);
+            selectedMapText.color = new Color(0.82f, 0.93f, 1f, 1f);
             selectedMapText.rectTransform.anchorMin = new Vector2(0.14f, 0.68f);
             selectedMapText.rectTransform.anchorMax = new Vector2(0.86f, 0.8f);
             selectedMapText.rectTransform.offsetMin = Vector2.zero;
@@ -213,7 +212,7 @@ namespace WarOfEras.MainMenu
                 "Start Game Button",
                 "\u5f00\u59cb\u6e38\u620f",
                 StartGame,
-                Color.white,
+                PrimaryButtonTint,
                 32,
                 true);
             var startRect = startButton.GetComponent<RectTransform>();
@@ -222,7 +221,7 @@ namespace WarOfEras.MainMenu
             startRect.sizeDelta = new Vector2(360f, 76f);
             startRect.anchoredPosition = Vector2.zero;
 
-            CreateBackButton(ShowMapSelectScreen);
+            CreateBackButton(ShowHomeScreen);
             RefreshDifficultyButtons();
         }
 
@@ -253,7 +252,7 @@ namespace WarOfEras.MainMenu
 
         private void ShowArchiveScreen()
         {
-            ShowInfoScreen("\u6218\u7ee9\u6863\u6848", "\u6682\u65e0\u672c\u5730\u6218\u7ee9");
+            ShowInfoScreen("\u5175\u5de5\u56fe\u9274", "\u5175\u79cd\u4e0e\u9632\u5fa1\u8d44\u6599\u5df2\u5f52\u6863\uff0c\u540e\u7eed\u53ef\u6269\u5c55\u4e3a\u8be6\u7ec6\u56fe\u9274\u9875\u3002");
         }
 
         private void ShowSettingsScreen()
@@ -261,23 +260,35 @@ namespace WarOfEras.MainMenu
             ShowInfoScreen("\u6e38\u620f\u8bbe\u7f6e", "\u9ed8\u8ba4\u97f3\u6548\u4e0e\u753b\u9762\u914d\u7f6e\u5df2\u542f\u7528");
         }
 
+        private void ShowTutorialScreen()
+        {
+            ShowInfoScreen("\u73a9\u6cd5\u6559\u7a0b", "\u5efa\u9020\u9632\u7ebf\u3001\u8bad\u7ec3\u5175\u79cd\u3001\u63a8\u8fdb\u7eaa\u5143\uff0c\u6467\u6bc1\u654c\u65b9\u636e\u70b9\u5373\u53ef\u83b7\u80dc\u3002");
+        }
+
+        private void QuitGame()
+        {
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+        }
+
         private void ShowInfoScreen(string titleValue, string detail)
         {
             ClearContent();
-            pulseButton = null;
-            pulseButtonImage = null;
             SetContentBounds(0.25f, 0.16f, 0.75f, 0.56f);
 
             CreateScreenTitle(titleValue);
 
-            var panel = CreateStyledPanel("Info Panel", contentRoot, new Color(0.07f, 0.075f, 0.075f, 0.9f));
+            var panel = CreateStyledPanel("Info Panel", contentRoot, new Color(0.04f, 0.07f, 0.11f, 0.9f));
             panel.anchorMin = new Vector2(0.14f, 0.32f);
             panel.anchorMax = new Vector2(0.86f, 0.62f);
             panel.offsetMin = Vector2.zero;
             panel.offsetMax = Vector2.zero;
 
             var message = CreateText(panel, "Info Detail", detail, 24, FontStyle.Bold, TextAnchor.MiddleCenter);
-            message.color = new Color(0.94f, 0.86f, 0.68f, 1f);
+            message.color = new Color(0.84f, 0.93f, 1f, 1f);
             message.rectTransform.anchorMin = new Vector2(0.08f, 0.18f);
             message.rectTransform.anchorMax = new Vector2(0.92f, 0.82f);
             message.rectTransform.offsetMin = Vector2.zero;
@@ -318,13 +329,44 @@ namespace WarOfEras.MainMenu
                 label + " Button",
                 label,
                 onClick,
-                pulse ? Color.white : new Color(0.88f, 0.9f, 0.84f, 1f),
-                30,
+                pulse ? PrimaryButtonTint : ButtonNormalTint,
+                26,
                 pulse);
             var rect = button.GetComponent<RectTransform>();
             rect.anchorMin = new Vector2(0.5f, y);
             rect.anchorMax = new Vector2(0.5f, y);
-            rect.sizeDelta = new Vector2(420f, 70f);
+            rect.sizeDelta = pulse ? new Vector2(500f, 74f) : new Vector2(455f, 60f);
+            rect.anchoredPosition = Vector2.zero;
+        }
+
+        private void CreateHomeUtilities()
+        {
+            CreateHomeUtilityButton("\u73a9\u6cd5\u6559\u7a0b", ShowTutorialScreen, new Vector2(0.875f, 0.47f), ButtonNormalTint, 230f);
+            CreateHomeUtilityButton("\u5175\u5de5\u56fe\u9274", ShowArchiveScreen, new Vector2(0.875f, 0.385f), ButtonNormalTint, 230f);
+            CreateHomeUtilityButton("\u8bbe\u7f6e", ShowSettingsScreen, new Vector2(0.875f, 0.3f), ButtonNormalTint, 230f);
+            CreateHomeUtilityButton("\u9000\u51fa\u6e38\u620f", QuitGame, new Vector2(0.895f, 0.12f), new Color(1f, 0.72f, 0.66f, 1f), 210f);
+        }
+
+        private void CreateHomeUtilityButton(string label, UnityAction onClick, Vector2 anchor, Color tint, float width)
+        {
+            if (utilityRoot == null)
+            {
+                return;
+            }
+
+            var button = CreateButton(
+                utilityRoot,
+                label + " Utility Button",
+                label,
+                onClick,
+                tint,
+                20,
+                false,
+                false);
+            var rect = button.GetComponent<RectTransform>();
+            rect.anchorMin = anchor;
+            rect.anchorMax = anchor;
+            rect.sizeDelta = new Vector2(width, 52f);
             rect.anchoredPosition = Vector2.zero;
         }
 
@@ -338,25 +380,38 @@ namespace WarOfEras.MainMenu
             shadow.rectTransform.offsetMax = new Vector2(3f, -5f);
 
             var title = CreateText(contentRoot, "Screen Title", value, 36, FontStyle.Bold, TextAnchor.MiddleCenter);
-            title.color = new Color(0.96f, 0.86f, 0.58f, 1f);
+            title.color = TextCyan;
             title.rectTransform.anchorMin = new Vector2(0f, 0.84f);
             title.rectTransform.anchorMax = new Vector2(1f, 1f);
             title.rectTransform.offsetMin = Vector2.zero;
             title.rectTransform.offsetMax = Vector2.zero;
         }
 
-        private void CreateMapCard(BattleMapDefinition map, int index)
+        private void CreateMapCard(BattleMapDefinition map, int index, int total)
         {
-            var card = CreateStyledPanel("Map Card " + index, contentRoot, new Color(0.055f, 0.064f, 0.062f, 0.92f));
-            card.anchorMin = new Vector2(0.18f, 0.17f);
-            card.anchorMax = new Vector2(0.82f, 0.74f);
+            var columns = Mathf.Min(Mathf.Max(total, 1), 3);
+            var rows = Mathf.CeilToInt(total / (float)columns);
+            var column = index % columns;
+            var row = index / columns;
+            var gap = 0.035f;
+            var cardWidth = columns == 1 ? 0.64f : (0.78f - gap * (columns - 1)) / columns;
+            var cardHeight = rows == 1 ? 0.57f : (0.57f - 0.045f * (rows - 1)) / rows;
+            var totalWidth = cardWidth * columns + gap * (columns - 1);
+            var xMin = 0.5f - totalWidth * 0.5f + column * (cardWidth + gap);
+            var yMax = 0.74f - row * (cardHeight + 0.045f);
+
+            var card = CreateStyledPanel("Map Card " + index, contentRoot, new Color(0.04f, 0.07f, 0.11f, 0.92f));
+            card.anchorMin = new Vector2(xMin, yMax - cardHeight);
+            card.anchorMax = new Vector2(xMin + cardWidth, yMax);
             card.offsetMin = Vector2.zero;
             card.offsetMax = Vector2.zero;
 
             var button = card.gameObject.AddComponent<Button>();
-            button.targetGraphic = card.GetComponent<Image>();
+            var cardImage = card.GetComponent<Image>();
+            button.targetGraphic = cardImage;
             button.onClick.AddListener(() => SelectMap(map));
-            SetButtonColor(button, new Color(1f, 1f, 1f, 0.92f));
+            AddHoverEffect(button, cardImage, ButtonNormalTint, 1.025f);
+            SetButtonColor(button, selectedMap != null && selectedMap.Id == map.Id ? SelectedButtonTint : ButtonNormalTint);
 
             var thumbnailRect = CreatePanel("Map Thumbnail", card, Color.white);
             thumbnailRect.anchorMin = new Vector2(0.035f, 0.24f);
@@ -367,10 +422,10 @@ namespace WarOfEras.MainMenu
             var thumbnail = thumbnailRect.GetComponent<Image>();
             thumbnail.sprite = LoadResourceSprite(map.ResourcePath);
             thumbnail.preserveAspect = true;
-            thumbnail.color = new Color(0.86f, 0.88f, 0.78f, 1f);
+            thumbnail.color = new Color(0.78f, 0.88f, 1f, 1f);
             thumbnail.raycastTarget = false;
 
-            var frame = CreatePanel("Map Thumbnail Frame", card, new Color(0.95f, 0.68f, 0.28f, 0.54f));
+            var frame = CreatePanel("Map Thumbnail Frame", card, new Color(0.16f, 0.78f, 1f, 0.54f));
             frame.anchorMin = new Vector2(0.033f, 0.235f);
             frame.anchorMax = new Vector2(0.967f, 0.925f);
             frame.offsetMin = Vector2.zero;
@@ -379,14 +434,14 @@ namespace WarOfEras.MainMenu
             frame.GetComponent<Image>().raycastTarget = false;
 
             var label = CreateText(card, "Map Label", map.DisplayName, 25, FontStyle.Bold, TextAnchor.MiddleCenter);
-            label.color = new Color(1f, 0.86f, 0.52f, 1f);
+            label.color = TextCyan;
             label.rectTransform.anchorMin = new Vector2(0.04f, 0.1f);
             label.rectTransform.anchorMax = new Vector2(0.96f, 0.22f);
             label.rectTransform.offsetMin = Vector2.zero;
             label.rectTransform.offsetMax = Vector2.zero;
 
             var description = CreateText(card, "Map Description", map.Description, 16, FontStyle.Normal, TextAnchor.MiddleCenter);
-            description.color = new Color(0.78f, 0.84f, 0.74f, 1f);
+            description.color = new Color(0.78f, 0.88f, 1f, 1f);
             description.rectTransform.anchorMin = new Vector2(0.06f, 0.015f);
             description.rectTransform.anchorMax = new Vector2(0.94f, 0.1f);
             description.rectTransform.offsetMin = Vector2.zero;
@@ -400,8 +455,9 @@ namespace WarOfEras.MainMenu
                 label + " Difficulty",
                 label + "\n" + detail,
                 () => SelectDifficulty(difficulty),
-                new Color(0.88f, 0.9f, 0.84f, 1f),
+                ButtonNormalTint,
                 23,
+                false,
                 false);
             var rect = button.GetComponent<RectTransform>();
             rect.anchorMin = new Vector2(xMin, 0.34f);
@@ -413,7 +469,7 @@ namespace WarOfEras.MainMenu
 
         private void CreateBackButton(UnityAction onClick)
         {
-            var button = CreateButton(contentRoot, "Back Button", "\u8fd4\u56de", onClick, new Color(0.88f, 0.9f, 0.84f, 1f), 22, false);
+            var button = CreateButton(contentRoot, "Back Button", "\u8fd4\u56de", onClick, ButtonNormalTint, 22, false, false);
             var rect = button.GetComponent<RectTransform>();
             rect.anchorMin = new Vector2(0.02f, 0.02f);
             rect.anchorMax = new Vector2(0.16f, 0.14f);
@@ -430,26 +486,33 @@ namespace WarOfEras.MainMenu
                 SetButtonColor(
                     binding.Button,
                     selected
-                        ? new Color(1f, 0.78f, 0.36f, 1f)
-                        : new Color(0.88f, 0.9f, 0.84f, 1f));
+                        ? SelectedButtonTint
+                        : ButtonNormalTint);
             }
 
             if (startButton != null)
             {
                 startButton.interactable = hasSelectedDifficulty;
+                SetButtonColor(startButton, hasSelectedDifficulty ? PrimaryButtonTint : new Color(0.32f, 0.4f, 0.52f, 0.72f));
             }
         }
 
         private void ClearContent()
         {
-            if (contentRoot == null)
+            ClearChildren(contentRoot);
+            ClearChildren(utilityRoot);
+        }
+
+        private static void ClearChildren(RectTransform root)
+        {
+            if (root == null)
             {
                 return;
             }
 
-            for (var i = contentRoot.childCount - 1; i >= 0; i--)
+            for (var i = root.childCount - 1; i >= 0; i--)
             {
-                Destroy(contentRoot.GetChild(i).gameObject);
+                Destroy(root.GetChild(i).gameObject);
             }
         }
 
@@ -475,11 +538,11 @@ namespace WarOfEras.MainMenu
             battlefield.offsetMax = Vector2.zero;
 
             var battlefieldImage = battlefield.GetComponent<Image>();
-            battlefieldImage.sprite = LoadResourceSprite(MenuBackgroundResource);
+            battlefieldImage.sprite = LoadResourceSprite(MenuBackgroundResource, FallbackBackgroundResource);
             battlefieldImage.preserveAspect = false;
-            battlefieldImage.color = new Color(0.56f, 0.55f, 0.44f, 1f);
+            battlefieldImage.color = Color.white;
 
-            var wash = CreatePanel("Battlefield Wash", root, new Color(0.025f, 0.03f, 0.035f, 0.4f));
+            var wash = CreatePanel("Battlefield Wash", root, new Color(0.01f, 0.015f, 0.03f, 0.24f));
             wash.anchorMin = Vector2.zero;
             wash.anchorMax = Vector2.one;
             wash.offsetMin = Vector2.zero;
@@ -502,85 +565,82 @@ namespace WarOfEras.MainMenu
             var bottomFadeImage = bottomFade.GetComponent<Image>();
             bottomFadeImage.sprite = BottomFadeSprite;
             bottomFadeImage.color = Color.white;
-
-            var commandSpine = CreateStyledPanel("Command Spine", root, new Color(0.035f, 0.04f, 0.042f, 0.74f));
-            commandSpine.anchorMin = new Vector2(0.31f, 0.075f);
-            commandSpine.anchorMax = new Vector2(0.69f, 0.62f);
-            commandSpine.offsetMin = Vector2.zero;
-            commandSpine.offsetMax = Vector2.zero;
-
-            var spineTop = CreatePanel("Command Spine Top Rule", root, new Color(0.9f, 0.58f, 0.24f, 0.76f));
-            spineTop.anchorMin = new Vector2(0.335f, 0.605f);
-            spineTop.anchorMax = new Vector2(0.665f, 0.61f);
-            spineTop.offsetMin = Vector2.zero;
-            spineTop.offsetMax = Vector2.zero;
-
-            var spineBottom = CreatePanel("Command Spine Bottom Rule", root, new Color(0.86f, 0.28f, 0.12f, 0.58f));
-            spineBottom.anchorMin = new Vector2(0.345f, 0.086f);
-            spineBottom.anchorMax = new Vector2(0.655f, 0.091f);
-            spineBottom.offsetMin = Vector2.zero;
-            spineBottom.offsetMax = Vector2.zero;
-
-            CreateBaseCrest(root);
-
-            leftLine = CreateLine(root, "Upper Frontline", new Vector2(0.08f, 0.66f), new Vector2(0.39f, 0.668f), new Color(0.86f, 0.3f, 0.14f, 0.82f));
-            leftLine.rectTransform.localEulerAngles = new Vector3(0f, 0f, -7f);
-            centerLine = CreateLine(root, "Middle Frontline", new Vector2(0.22f, 0.47f), new Vector2(0.78f, 0.477f), new Color(0.93f, 0.68f, 0.25f, 0.66f));
-            centerLine.rectTransform.localEulerAngles = new Vector3(0f, 0f, 2.5f);
-            rightLine = CreateLine(root, "Lower Frontline", new Vector2(0.59f, 0.23f), new Vector2(0.91f, 0.238f), new Color(0.18f, 0.62f, 0.66f, 0.58f));
-            rightLine.rectTransform.localEulerAngles = new Vector3(0f, 0f, -8f);
         }
 
         private void BuildTitle(RectTransform root)
         {
-            titleAura = CreatePanel("Title Aura", root, new Color(0.9f, 0.32f, 0.08f, 0.16f)).GetComponent<Image>();
-            titleAura.rectTransform.anchorMin = new Vector2(0.22f, 0.705f);
-            titleAura.rectTransform.anchorMax = new Vector2(0.78f, 0.89f);
+            var titleArea = CreateRect("Title Logo Area", root);
+            titleArea.anchorMin = new Vector2(0.14f, 0.57f);
+            titleArea.anchorMax = new Vector2(0.86f, 0.95f);
+            titleArea.offsetMin = Vector2.zero;
+            titleArea.offsetMax = Vector2.zero;
+
+            titleAura = CreatePanel("Title Aura", titleArea, new Color(0.12f, 0.62f, 1f, 0.12f)).GetComponent<Image>();
+            titleAura.rectTransform.anchorMin = new Vector2(0.16f, 0.18f);
+            titleAura.rectTransform.anchorMax = new Vector2(0.84f, 0.78f);
             titleAura.rectTransform.offsetMin = Vector2.zero;
             titleAura.rectTransform.offsetMax = Vector2.zero;
+            titleAura.raycastTarget = false;
 
-            var shadow = CreateText(root, "Game Title Shadow", GameTitle, 78, FontStyle.Bold, TextAnchor.MiddleCenter);
-            shadow.color = new Color(0f, 0f, 0f, 0.88f);
-            shadow.resizeTextForBestFit = true;
-            shadow.resizeTextMinSize = 36;
-            shadow.resizeTextMaxSize = 78;
-            shadow.rectTransform.anchorMin = new Vector2(0.08f, 0.715f);
-            shadow.rectTransform.anchorMax = new Vector2(0.92f, 0.86f);
-            shadow.rectTransform.offsetMin = new Vector2(6f, -8f);
-            shadow.rectTransform.offsetMax = new Vector2(6f, -8f);
+            var logoRect = CreatePanel("Title Logo", titleArea, Color.white);
+            logoRect.anchorMin = new Vector2(0f, 0f);
+            logoRect.anchorMax = Vector2.one;
+            logoRect.offsetMin = Vector2.zero;
+            logoRect.offsetMax = Vector2.zero;
 
-            var glow = CreateText(root, "Game Title Glow", GameTitle, 82, FontStyle.Bold, TextAnchor.MiddleCenter);
-            glow.color = new Color(0.94f, 0.28f, 0.09f, 0.32f);
-            glow.resizeTextForBestFit = true;
-            glow.resizeTextMinSize = 36;
-            glow.resizeTextMaxSize = 82;
-            glow.rectTransform.anchorMin = new Vector2(0.08f, 0.715f);
-            glow.rectTransform.anchorMax = new Vector2(0.92f, 0.86f);
-            glow.rectTransform.offsetMin = Vector2.zero;
-            glow.rectTransform.offsetMax = Vector2.zero;
+            var logo = logoRect.GetComponent<Image>();
+            logo.sprite = LoadResourceSprite(TitleLogoResource);
+            logo.preserveAspect = true;
+            logo.raycastTarget = false;
 
-            var title = CreateText(root, "Game Title", GameTitle, 74, FontStyle.Bold, TextAnchor.MiddleCenter);
-            title.color = new Color(1f, 0.9f, 0.58f, 1f);
-            title.resizeTextForBestFit = true;
-            title.resizeTextMinSize = 36;
-            title.resizeTextMaxSize = 74;
-            title.rectTransform.anchorMin = new Vector2(0.08f, 0.715f);
-            title.rectTransform.anchorMax = new Vector2(0.92f, 0.86f);
-            title.rectTransform.offsetMin = Vector2.zero;
-            title.rectTransform.offsetMax = Vector2.zero;
+            var bottomRule = CreatePanel("Title Red Slash", titleArea, new Color(1f, 0.18f, 0.1f, 0.7f));
+            bottomRule.anchorMin = new Vector2(0.32f, 0.02f);
+            bottomRule.anchorMax = new Vector2(0.68f, 0.035f);
+            bottomRule.offsetMin = Vector2.zero;
+            bottomRule.offsetMax = Vector2.zero;
+            bottomRule.GetComponent<Image>().raycastTarget = false;
+        }
 
-            var subtitlePlate = CreateStyledPanel("Subtitle Plate", root, new Color(0.04f, 0.05f, 0.052f, 0.78f));
-            subtitlePlate.anchorMin = new Vector2(0.36f, 0.66f);
-            subtitlePlate.anchorMax = new Vector2(0.64f, 0.705f);
-            subtitlePlate.offsetMin = Vector2.zero;
-            subtitlePlate.offsetMax = Vector2.zero;
+        private void BuildEraTimeline(RectTransform root)
+        {
+            var timeline = CreateStyledPanel("Era Timeline", root, new Color(0.02f, 0.045f, 0.085f, 0.78f));
+            timeline.anchorMin = new Vector2(0.17f, 0.03f);
+            timeline.anchorMax = new Vector2(0.83f, 0.1f);
+            timeline.offsetMin = Vector2.zero;
+            timeline.offsetMax = Vector2.zero;
 
-            var subtitle = CreateText(subtitlePlate, "English Title", "FRONTLINE EVOLUTION", 20, FontStyle.Bold, TextAnchor.MiddleCenter);
-            subtitle.color = new Color(0.76f, 0.84f, 0.78f, 1f);
-            subtitle.rectTransform.anchorMin = new Vector2(0.05f, 0.05f);
-            subtitle.rectTransform.anchorMax = new Vector2(0.95f, 0.95f);
-            subtitle.rectTransform.offsetMin = Vector2.zero;
-            subtitle.rectTransform.offsetMax = Vector2.zero;
+            for (var i = 0; i < EraNames.Length; i++)
+            {
+                var x = 0.09f + i * 0.205f;
+                if (i < EraNames.Length - 1)
+                {
+                    var line = CreatePanel("Era Segment " + i, timeline, new Color(0.38f, 0.55f, 0.75f, 0.48f));
+                    line.anchorMin = new Vector2(x + 0.028f, 0.59f);
+                    line.anchorMax = new Vector2(x + 0.177f, 0.635f);
+                    line.offsetMin = Vector2.zero;
+                    line.offsetMax = Vector2.zero;
+                    line.GetComponent<Image>().raycastTarget = false;
+                }
+
+                var dot = CreatePanel("Era Dot " + i, timeline, EraColors[i]);
+                dot.anchorMin = new Vector2(x, 0.62f);
+                dot.anchorMax = new Vector2(x, 0.62f);
+                dot.sizeDelta = new Vector2(18f, 18f);
+                dot.anchoredPosition = Vector2.zero;
+                var dotImage = dot.GetComponent<Image>();
+                dotImage.sprite = DotSprite;
+                dotImage.raycastTarget = false;
+
+                var label = CreateText(timeline, "Era Label " + i, EraNames[i], 17, FontStyle.Bold, TextAnchor.MiddleCenter);
+                label.color = new Color(0.86f, 0.92f, 1f, 1f);
+                label.resizeTextForBestFit = true;
+                label.resizeTextMinSize = 12;
+                label.resizeTextMaxSize = 17;
+                label.rectTransform.anchorMin = new Vector2(x - 0.07f, 0.12f);
+                label.rectTransform.anchorMax = new Vector2(x + 0.07f, 0.44f);
+                label.rectTransform.offsetMin = Vector2.zero;
+                label.rectTransform.offsetMax = Vector2.zero;
+            }
         }
 
         private void BuildSideActions(RectTransform root)
@@ -663,7 +723,7 @@ namespace WarOfEras.MainMenu
             captionText.rectTransform.offsetMax = Vector2.zero;
         }
 
-        private Button CreateButton(RectTransform parent, string name, string label, UnityAction onClick, Color normalColor, int fontSize, bool pulse)
+        private Button CreateButton(RectTransform parent, string name, string label, UnityAction onClick, Color normalColor, int fontSize, bool pulse, bool showChevron = true)
         {
             var buttonRect = CreatePanel(name, parent, normalColor);
             var image = buttonRect.GetComponent<Image>();
@@ -672,23 +732,19 @@ namespace WarOfEras.MainMenu
 
             var button = buttonRect.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
+            button.transition = Selectable.Transition.None;
             button.onClick.AddListener(onClick);
+            AddHoverEffect(button, image, normalColor, pulse ? 1.055f : 1.045f);
             SetButtonColor(button, normalColor);
 
-            if (pulse)
-            {
-                pulseButton = button;
-                pulseButtonImage = image;
-            }
-
-            var topShine = CreatePanel("Top Shine", buttonRect, new Color(1f, 0.88f, 0.58f, pulse ? 0.22f : 0.12f));
+            var topShine = CreatePanel("Top Shine", buttonRect, pulse ? new Color(1f, 1f, 1f, 0.28f) : new Color(0.24f, 0.86f, 1f, 0.16f));
             topShine.anchorMin = new Vector2(0.07f, 0.66f);
             topShine.anchorMax = new Vector2(0.93f, 0.78f);
             topShine.offsetMin = Vector2.zero;
             topShine.offsetMax = Vector2.zero;
             topShine.GetComponent<Image>().raycastTarget = false;
 
-            var leftAccent = CreatePanel("Left Accent", buttonRect, pulse ? new Color(1f, 0.76f, 0.28f, 0.75f) : new Color(0.8f, 0.62f, 0.34f, 0.5f));
+            var leftAccent = CreatePanel("Left Accent", buttonRect, pulse ? new Color(1f, 0.34f, 0.16f, 0.84f) : new Color(0.14f, 0.82f, 1f, 0.7f));
             leftAccent.anchorMin = new Vector2(0.03f, 0.21f);
             leftAccent.anchorMax = new Vector2(0.065f, 0.79f);
             leftAccent.offsetMin = Vector2.zero;
@@ -696,14 +752,25 @@ namespace WarOfEras.MainMenu
             leftAccent.GetComponent<Image>().raycastTarget = false;
 
             var text = CreateText(buttonRect, "Label", label, fontSize, FontStyle.Bold, TextAnchor.MiddleCenter);
-            text.color = new Color(1f, 0.94f, 0.78f, 1f);
+            text.color = pulse ? new Color(0.02f, 0.07f, 0.2f, 1f) : new Color(0.9f, 0.96f, 1f, 1f);
             text.resizeTextForBestFit = true;
             text.resizeTextMinSize = 14;
             text.resizeTextMaxSize = fontSize;
             text.rectTransform.anchorMin = Vector2.zero;
             text.rectTransform.anchorMax = Vector2.one;
-            text.rectTransform.offsetMin = new Vector2(28f, 7f);
-            text.rectTransform.offsetMax = new Vector2(-28f, -7f);
+            text.rectTransform.offsetMin = new Vector2(34f, 5f);
+            text.rectTransform.offsetMax = new Vector2(showChevron ? -58f : -34f, -5f);
+
+            if (showChevron)
+            {
+                var chevron = CreateText(buttonRect, "Chevron", "\u203a", fontSize + 8, FontStyle.Bold, TextAnchor.MiddleCenter);
+                chevron.color = pulse ? new Color(0.02f, 0.07f, 0.2f, 1f) : new Color(0.9f, 0.96f, 1f, 1f);
+                chevron.rectTransform.anchorMin = new Vector2(0.84f, 0f);
+                chevron.rectTransform.anchorMax = new Vector2(0.97f, 1f);
+                chevron.rectTransform.offsetMin = Vector2.zero;
+                chevron.rectTransform.offsetMax = Vector2.zero;
+            }
+
             return button;
         }
 
@@ -720,6 +787,12 @@ namespace WarOfEras.MainMenu
                 image.color = normalColor;
             }
 
+            var hover = button.GetComponent<MenuHoverEffect>();
+            if (hover != null)
+            {
+                hover.SetColors(normalColor, ButtonHoverTint);
+            }
+
             var colors = button.colors;
             colors.normalColor = normalColor;
             colors.highlightedColor = Color.Lerp(normalColor, Color.white, 0.18f);
@@ -730,9 +803,27 @@ namespace WarOfEras.MainMenu
             button.colors = colors;
         }
 
+        private void AddHoverEffect(Button button, Image targetImage, Color normalColor, float hoverScale)
+        {
+            var hover = button.gameObject.AddComponent<MenuHoverEffect>();
+            hover.Initialize(button, targetImage, normalColor, ButtonHoverTint, hoverScale);
+        }
+
         private Sprite LoadResourceSprite(string resourcePath)
         {
             var texture = Resources.Load<Texture2D>(resourcePath);
+            if (texture == null)
+            {
+                return WhiteSprite;
+            }
+
+            return Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        private Sprite LoadResourceSprite(string resourcePath, string fallbackResourcePath)
+        {
+            var texture = Resources.Load<Texture2D>(resourcePath)
+                ?? Resources.Load<Texture2D>(fallbackResourcePath);
             if (texture == null)
             {
                 return WhiteSprite;
@@ -798,6 +889,17 @@ namespace WarOfEras.MainMenu
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
             text.verticalOverflow = VerticalWrapMode.Overflow;
             text.raycastTarget = false;
+
+            var shadow = textObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.68f);
+            shadow.effectDistance = size >= 24 ? new Vector2(2f, -2f) : new Vector2(1.25f, -1.25f);
+            if (size >= 18)
+            {
+                var outline = textObject.AddComponent<Outline>();
+                outline.effectColor = new Color(0.01f, 0.025f, 0.045f, 0.58f);
+                outline.effectDistance = size >= 28 ? new Vector2(1.65f, -1.65f) : new Vector2(1.1f, -1.1f);
+            }
+
             return text;
         }
 
@@ -818,7 +920,23 @@ namespace WarOfEras.MainMenu
 
         private static Font CreateUiFont()
         {
-            var font = Font.CreateDynamicFontFromOSFont(new[] { "Microsoft YaHei", "SimHei", "Arial" }, 16);
+            var font = Font.CreateDynamicFontFromOSFont(
+                new[]
+                {
+                    "STXinwei",
+                    "\u534e\u6587\u65b0\u9b4f",
+                    "STHupo",
+                    "\u534e\u6587\u7425\u73c0",
+                    "STXingkai",
+                    "\u534e\u6587\u884c\u6977",
+                    "FZShuTi",
+                    "\u65b9\u6b63\u8212\u4f53",
+                    "SimHei",
+                    "Microsoft YaHei UI",
+                    "Microsoft YaHei",
+                    "Arial"
+                },
+                16);
             if (font != null)
             {
                 return font;
@@ -845,6 +963,19 @@ namespace WarOfEras.MainMenu
             }
         }
 
+        private static Sprite DotSprite
+        {
+            get
+            {
+                if (dotSprite == null)
+                {
+                    dotSprite = CreateDotSprite();
+                }
+
+                return dotSprite;
+            }
+        }
+
         private static Sprite MenuButtonSprite
         {
             get
@@ -852,11 +983,11 @@ namespace WarOfEras.MainMenu
                 if (menuButtonSprite == null)
                 {
                     menuButtonSprite = CreateBeveledSprite(
-                        new Color(0.23f, 0.24f, 0.23f, 1f),
-                        new Color(0.1f, 0.11f, 0.11f, 1f),
-                        new Color(0.045f, 0.05f, 0.052f, 1f),
-                        new Color(0.78f, 0.58f, 0.32f, 1f),
-                        new Color(1f, 0.82f, 0.45f, 1f));
+                        new Color(0.055f, 0.11f, 0.18f, 1f),
+                        new Color(0.025f, 0.045f, 0.075f, 1f),
+                        new Color(0.012f, 0.02f, 0.04f, 1f),
+                        new Color(0.16f, 0.76f, 1f, 1f),
+                        new Color(0.56f, 0.92f, 1f, 1f));
                 }
 
                 return menuButtonSprite;
@@ -870,11 +1001,11 @@ namespace WarOfEras.MainMenu
                 if (primaryButtonSprite == null)
                 {
                     primaryButtonSprite = CreateBeveledSprite(
-                        new Color(0.82f, 0.32f, 0.12f, 1f),
-                        new Color(0.48f, 0.13f, 0.08f, 1f),
-                        new Color(0.2f, 0.055f, 0.035f, 1f),
-                        new Color(1f, 0.72f, 0.32f, 1f),
-                        new Color(1f, 0.92f, 0.56f, 1f));
+                        new Color(0.45f, 0.88f, 1f, 1f),
+                        new Color(0.42f, 0.43f, 0.94f, 1f),
+                        new Color(0.32f, 0.18f, 0.72f, 1f),
+                        new Color(0.74f, 0.96f, 1f, 1f),
+                        new Color(1f, 1f, 1f, 1f));
                 }
 
                 return primaryButtonSprite;
@@ -888,11 +1019,11 @@ namespace WarOfEras.MainMenu
                 if (panelSprite == null)
                 {
                     panelSprite = CreateBeveledSprite(
-                        new Color(0.12f, 0.13f, 0.13f, 1f),
-                        new Color(0.055f, 0.06f, 0.06f, 1f),
-                        new Color(0.025f, 0.028f, 0.03f, 1f),
-                        new Color(0.62f, 0.44f, 0.25f, 1f),
-                        new Color(0.82f, 0.62f, 0.36f, 1f));
+                        new Color(0.055f, 0.09f, 0.14f, 1f),
+                        new Color(0.022f, 0.038f, 0.068f, 1f),
+                        new Color(0.008f, 0.014f, 0.032f, 1f),
+                        new Color(0.18f, 0.46f, 0.82f, 1f),
+                        new Color(0.46f, 0.86f, 1f, 1f));
                 }
 
                 return panelSprite;
@@ -906,11 +1037,11 @@ namespace WarOfEras.MainMenu
                 if (iconButtonSprite == null)
                 {
                     iconButtonSprite = CreateBeveledSprite(
-                        new Color(0.18f, 0.2f, 0.2f, 1f),
-                        new Color(0.08f, 0.09f, 0.09f, 1f),
-                        new Color(0.03f, 0.034f, 0.036f, 1f),
-                        new Color(0.8f, 0.58f, 0.28f, 1f),
-                        new Color(0.9f, 0.7f, 0.38f, 1f));
+                        new Color(0.07f, 0.12f, 0.18f, 1f),
+                        new Color(0.03f, 0.055f, 0.085f, 1f),
+                        new Color(0.012f, 0.024f, 0.044f, 1f),
+                        new Color(0.16f, 0.76f, 1f, 1f),
+                        new Color(0.56f, 0.92f, 1f, 1f));
                 }
 
                 return iconButtonSprite;
@@ -923,7 +1054,7 @@ namespace WarOfEras.MainMenu
             {
                 if (topFadeSprite == null)
                 {
-                    topFadeSprite = CreateVerticalGradientSprite(new Color(0f, 0f, 0f, 0f), new Color(0f, 0f, 0f, 0.88f));
+                    topFadeSprite = CreateVerticalGradientSprite(new Color(0f, 0f, 0f, 0f), new Color(0f, 0f, 0f, 0.44f));
                 }
 
                 return topFadeSprite;
@@ -936,7 +1067,7 @@ namespace WarOfEras.MainMenu
             {
                 if (bottomFadeSprite == null)
                 {
-                    bottomFadeSprite = CreateVerticalGradientSprite(new Color(0f, 0f, 0f, 0.9f), new Color(0f, 0f, 0f, 0f));
+                    bottomFadeSprite = CreateVerticalGradientSprite(new Color(0f, 0f, 0f, 0.54f), new Color(0f, 0f, 0f, 0f));
                 }
 
                 return bottomFadeSprite;
@@ -1010,6 +1141,116 @@ namespace WarOfEras.MainMenu
 
             texture.Apply();
             return Sprite.Create(texture, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        private static Sprite CreateDotSprite()
+        {
+            const int size = 64;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+            var center = (size - 1) * 0.5f;
+            var radius = size * 0.38f;
+
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var distance = Vector2.Distance(new Vector2(x, y), new Vector2(center, center));
+                    var alpha = Mathf.Clamp01(radius + 1.5f - distance);
+                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+                }
+            }
+
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        private sealed class MenuHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
+        {
+            private const float AnimationSpeed = 14f;
+
+            private Button button;
+            private Image targetImage;
+            private Color normalColor;
+            private Color hoverColor;
+            private Vector3 normalScale = Vector3.one;
+            private Vector3 hoverScale = Vector3.one;
+            private bool pointerInside;
+            private bool selected;
+            private bool initialized;
+
+            public void Initialize(Button sourceButton, Image image, Color normal, Color hover, float scale)
+            {
+                button = sourceButton;
+                targetImage = image;
+                normalColor = normal;
+                hoverColor = hover;
+                normalScale = transform.localScale;
+                hoverScale = normalScale * scale;
+                initialized = true;
+
+                if (targetImage != null)
+                {
+                    targetImage.color = normalColor;
+                }
+            }
+
+            public void SetColors(Color normal, Color hover)
+            {
+                normalColor = normal;
+                hoverColor = hover;
+
+                if (!IsHighlighted() && targetImage != null)
+                {
+                    targetImage.color = normalColor;
+                }
+            }
+
+            private void Update()
+            {
+                if (!initialized)
+                {
+                    return;
+                }
+
+                var highlighted = IsHighlighted();
+                var targetScale = highlighted ? hoverScale : normalScale;
+                transform.localScale = Vector3.Lerp(transform.localScale, targetScale, Time.unscaledDeltaTime * AnimationSpeed);
+
+                if (targetImage != null)
+                {
+                    var targetColor = highlighted ? hoverColor : normalColor;
+                    targetImage.color = Color.Lerp(targetImage.color, targetColor, Time.unscaledDeltaTime * AnimationSpeed);
+                }
+            }
+
+            public void OnPointerEnter(PointerEventData eventData)
+            {
+                pointerInside = true;
+                transform.SetAsLastSibling();
+            }
+
+            public void OnPointerExit(PointerEventData eventData)
+            {
+                pointerInside = false;
+            }
+
+            public void OnSelect(BaseEventData eventData)
+            {
+                selected = true;
+                transform.SetAsLastSibling();
+            }
+
+            public void OnDeselect(BaseEventData eventData)
+            {
+                selected = false;
+            }
+
+            private bool IsHighlighted()
+            {
+                return button != null && button.interactable && (pointerInside || selected);
+            }
         }
 
         private readonly struct DifficultyButtonBinding

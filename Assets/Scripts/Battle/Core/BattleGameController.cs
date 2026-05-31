@@ -829,8 +829,14 @@ namespace WarOfEras.Battle.Core
             battleLayout = FindFirstObjectByType<BattleLayout>();
             if (battleLayout == null)
             {
-                Debug.LogError("BattleLayout is missing. Battle.unity should contain a scene-authored Layout marker hierarchy.");
-                return;
+                battleLayout = gameObject.AddComponent<BattleLayout>();
+                CreateFallbackLayoutMarkers(battleLayout.transform);
+                Debug.LogWarning("BattleLayout was missing. Created runtime fallback Layout markers so Battle can run from the current scene state.");
+            }
+            else if (!battleLayout.Validate(out _))
+            {
+                CreateFallbackLayoutMarkers(battleLayout.transform);
+                Debug.LogWarning("BattleLayout marker hierarchy was incomplete. Rebuilt runtime fallback Layout markers.");
             }
 
             if (!battleLayout.Validate(out var validationErrors))
@@ -856,6 +862,74 @@ namespace WarOfEras.Battle.Core
             towerVisualScale = battleLayout.TowerVisualScale;
             baseVisualScale = battleLayout.BaseVisualScale;
             resourceWellVisualScale = battleLayout.ResourceWellVisualScale;
+        }
+
+        private static void CreateFallbackLayoutMarkers(Transform root)
+        {
+            var routesRoot = EnsureMarker(root, "Layout/Routes");
+            for (var laneIndex = 0; laneIndex < LaneRoutes.Length; laneIndex++)
+            {
+                var laneRoot = EnsureMarker(routesRoot, "Lane_" + laneIndex);
+                SyncMarkerChildren(laneRoot, "Point_", LaneRoutes[laneIndex]);
+            }
+
+            var basesRoot = EnsureMarker(root, "Layout/Bases");
+            EnsureMarker(basesRoot, "PlayerBasePoint").position = MapPoint(156f, 464f);
+            EnsureMarker(basesRoot, "EnemyBasePoint").position = MapPoint(1488f, 464f);
+
+            var towersRoot = EnsureMarker(root, "Layout/Towers");
+            EnsureMarker(towersRoot, "PlayerTowerSlot_0").position = new Vector3(-9.45f, 3.9f, 0f);
+            EnsureMarker(towersRoot, "PlayerTowerSlot_1").position = new Vector3(-9.35f, 0.95f, 0f);
+            EnsureMarker(towersRoot, "PlayerTowerSlot_2").position = new Vector3(-8.15f, -2.7f, 0f);
+            EnsureMarker(towersRoot, "EnemyTowerSlot_0").position = new Vector3(9.45f, 3.9f, 0f);
+            EnsureMarker(towersRoot, "EnemyTowerSlot_1").position = new Vector3(9.35f, 0.95f, 0f);
+            EnsureMarker(towersRoot, "EnemyTowerSlot_2").position = new Vector3(8.15f, -2.7f, 0f);
+
+            var wellsRoot = EnsureMarker(root, "Layout/ResourceWells");
+            EnsureMarker(wellsRoot, "PlayerWellSlot_0").position = MapPoint(488f, 578f);
+            EnsureMarker(wellsRoot, "PlayerWellSlot_1").position = MapPoint(820f, 840f);
+            EnsureMarker(wellsRoot, "EnemyWellSlot_0").position = MapPoint(1500f, 578f);
+            EnsureMarker(wellsRoot, "EnemyWellSlot_1").position = MapPoint(1152f, 840f);
+        }
+
+        private static Transform EnsureMarker(Transform root, string path)
+        {
+            var current = root;
+            var parts = path.Split('/');
+            for (var i = 0; i < parts.Length; i++)
+            {
+                var child = current.Find(parts[i]);
+                if (child == null)
+                {
+                    child = new GameObject(parts[i]).transform;
+                    child.SetParent(current, false);
+                }
+
+                current = child;
+            }
+
+            return current;
+        }
+
+        private static void SyncMarkerChildren(Transform root, string prefix, Vector3[] positions)
+        {
+            while (root.childCount > positions.Length)
+            {
+                DestroyImmediate(root.GetChild(root.childCount - 1).gameObject);
+            }
+
+            for (var i = 0; i < positions.Length; i++)
+            {
+                var marker = i < root.childCount ? root.GetChild(i) : null;
+                if (marker == null)
+                {
+                    marker = new GameObject(prefix + i.ToString("00")).transform;
+                    marker.SetParent(root, false);
+                }
+
+                marker.name = prefix + i.ToString("00");
+                marker.position = positions[i];
+            }
         }
 
         private void RebuildRouteGraphFromLayout()
@@ -1989,7 +2063,7 @@ namespace WarOfEras.Battle.Core
 
         private void SelectRouteTo(Vector3 worldPoint)
         {
-            if (!TryFindReachableTarget(worldPoint, out var target))
+            if (!TrySelectAuthoredLaneRoute(worldPoint, out var candidate))
             {
                 if (activeRouteCandidate == null)
                 {
@@ -2000,19 +2074,7 @@ namespace WarOfEras.Battle.Core
                 return;
             }
 
-            BuildRouteCandidates(target);
-            if (pendingRouteCandidates.Count == 0)
-            {
-                if (activeRouteCandidate == null)
-                {
-                    ClearRoutePreviews();
-                }
-
-                status = "\u6ca1\u6709\u627e\u5230\u5230\u8be5\u70b9\u7684\u53ef\u884c\u8def\u7ebf\u3002";
-                return;
-            }
-
-            activeRouteCandidate = pendingRouteCandidates[0];
+            activeRouteCandidate = candidate;
             pendingRouteCandidates.Clear();
             pendingRouteCandidates.Add(activeRouteCandidate);
             ShowRoutePreviews();
@@ -2036,18 +2098,71 @@ namespace WarOfEras.Battle.Core
 
             coins -= cost;
             selectedLane = activeRouteCandidate.LaneIndex;
-            var routePoints = BuildRouteWithHoldSlot(activeRouteCandidate);
             SpawnUnit(
                 definition,
                 0,
                 activeRouteCandidate.LaneIndex,
                 playerHealthMultiplier,
                 playerDamageMultiplier,
-                GetPlayerSpeedMultiplier(),
-                routePoints,
-                true);
+                GetPlayerSpeedMultiplier());
             GainEraValue(definition.Cost * 0.45f);
             status = definition.DisplayName + "\u5df2\u4ece\u57fa\u5730\u6d1e\u53e3\u51fa\u53d1\uff0c\u5f53\u524d\u8def\u7ebf\u7ee7\u7eed\u4fdd\u7559\u3002";
+        }
+
+        private bool TrySelectAuthoredLaneRoute(Vector3 worldPoint, out RouteCandidate candidate)
+        {
+            candidate = null;
+            var bestLane = -1;
+            var bestDistance = 1.15f;
+            var bestCost = float.PositiveInfinity;
+
+            for (var laneIndex = 0; laneIndex < laneRoutes.Length; laneIndex++)
+            {
+                var route = laneRoutes[laneIndex];
+                if (route == null || route.Length < 2)
+                {
+                    continue;
+                }
+
+                var distance = GetDistanceToRoute(worldPoint, route);
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    bestLane = laneIndex;
+                    bestCost = GetRouteLength(route);
+                }
+            }
+
+            if (bestLane < 0)
+            {
+                return false;
+            }
+
+            candidate = new RouteCandidate(new List<Vector3>(laneRoutes[bestLane]), bestCost, bestLane);
+            return true;
+        }
+
+        private static float GetDistanceToRoute(Vector3 point, Vector3[] route)
+        {
+            var bestDistance = float.MaxValue;
+            for (var i = 0; i < route.Length - 1; i++)
+            {
+                var projected = ClosestPointOnSegment(point, route[i], route[i + 1]);
+                bestDistance = Mathf.Min(bestDistance, Vector2.Distance(point, projected));
+            }
+
+            return bestDistance;
+        }
+
+        private static float GetRouteLength(Vector3[] route)
+        {
+            var length = 0f;
+            for (var i = 0; i < route.Length - 1; i++)
+            {
+                length += Vector2.Distance(route[i], route[i + 1]);
+            }
+
+            return length;
         }
 
         private Vector3[] BuildRouteWithHoldSlot(RouteCandidate candidate)

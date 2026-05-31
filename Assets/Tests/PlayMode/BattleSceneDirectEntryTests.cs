@@ -45,6 +45,39 @@ namespace WarOfEras.Tests
         }
 
         [UnityTest]
+        public IEnumerator RouteSelection_DispatchesUnitsOnAuthoredLane()
+        {
+            yield return LoadScene("Battle");
+            yield return null;
+
+            var layout = FindFirstObjectByType(LayoutType);
+            Assert.NotNull(layout);
+            var controller = FindFirstObjectByType(ControllerType);
+            Assert.NotNull(controller);
+
+            var laneRoute = InvokeVector3Array(layout, "GetLaneRoute", 1);
+            Assert.GreaterOrEqual(laneRoute.Length, 3);
+
+            var selectRoute = ControllerType.GetMethod("SelectRouteTo", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(selectRoute);
+            selectRoute.Invoke(controller, new object[] { laneRoute[laneRoute.Length / 2] });
+
+            var definitions = GetPlayerDefinitions(controller);
+            var dispatch = ControllerType.GetMethod("DispatchUnitOnActiveRoute", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(dispatch);
+            dispatch.Invoke(controller, new[] { definitions[0] });
+
+            var unit = Object.FindObjectsByType(ActiveUnitType, FindObjectsSortMode.None).Cast<Component>().Single();
+            var routePointsField = ActiveUnitType.GetField("routePoints", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(routePointsField);
+            var unitRoute = (Vector3[])routePointsField.GetValue(unit);
+
+            Assert.AreEqual(laneRoute.Length, unitRoute.Length, "Dispatched units should use the full authored lane route.");
+            Assert.That(Vector3.Distance(unitRoute[0], laneRoute[0]), Is.LessThan(0.02f));
+            Assert.That(Vector3.Distance(unitRoute[unitRoute.Length - 1], laneRoute[laneRoute.Length - 1]), Is.LessThan(0.02f));
+        }
+
+        [UnityTest]
         public IEnumerator MainMenuStart_LoadsBattleSceneWithLayout()
         {
             yield return LoadScene("MainMenu");
@@ -86,11 +119,7 @@ namespace WarOfEras.Tests
 
         private static Component SpawnPlayerUnit(Component controller, int laneIndex)
         {
-            var definitionsField = ControllerType.GetField("playerUnitDefinitions", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(definitionsField);
-            var definitions = (object[])definitionsField.GetValue(controller);
-            Assert.NotNull(definitions);
-            Assert.Greater(definitions.Length, 0);
+            var definitions = GetPlayerDefinitions(controller);
 
             var spawnUnit = ControllerType.GetMethod("SpawnUnit", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(spawnUnit);
@@ -99,6 +128,16 @@ namespace WarOfEras.Tests
             var units = Object.FindObjectsByType(ActiveUnitType, FindObjectsSortMode.None).Cast<Component>().ToArray();
             Assert.Greater(units.Length, 0);
             return units[0];
+        }
+
+        private static object[] GetPlayerDefinitions(Component controller)
+        {
+            var definitionsField = ControllerType.GetField("playerUnitDefinitions", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(definitionsField);
+            var definitions = (object[])definitionsField.GetValue(controller);
+            Assert.NotNull(definitions);
+            Assert.Greater(definitions.Length, 0);
+            return definitions;
         }
 
         private static System.Type ControllerType => RequiredType("WarOfEras.Battle.Core.BattleGameController");

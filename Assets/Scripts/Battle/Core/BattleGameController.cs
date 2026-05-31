@@ -2610,6 +2610,12 @@ namespace WarOfEras.Battle.Core
                 return;
             }
 
+            if (definition == null)
+            {
+                Debug.LogWarning("Skipping unit spawn because the unit definition is missing.");
+                return;
+            }
+
             var unitObject = new GameObject((team == 0 ? "Player " : "Enemy ") + definition.Key);
             unitObject.transform.SetParent(worldRoot, false);
             var spawnPosition = customRoute != null && customRoute.Length > 0
@@ -4148,7 +4154,7 @@ namespace WarOfEras.Battle.Core
 
         private void Update()
         {
-            if (controller == null || !IsAlive || controller.IsGameOver)
+            if (controller == null || Definition == null || !IsAlive || controller.IsGameOver)
             {
                 return;
             }

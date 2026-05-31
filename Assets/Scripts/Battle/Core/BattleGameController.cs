@@ -45,6 +45,7 @@ namespace WarOfEras.Battle.Core
         private const float ResourceWellEraValue = 65f;
         private const float BuildPlacementClickRadius = 0.85f;
         private const float UnitCombatContactPadding = 0.34f;
+        private static readonly Rect BaseArtRect = new Rect(250f, 80f, 1170f, 740f);
 
         private static readonly string[] AgeNames =
         {
@@ -93,6 +94,24 @@ namespace WarOfEras.Battle.Core
             new Color(0.66f, 0.88f, 1f, 1f),
             new Color(0.76f, 1f, 0.64f, 1f),
             new Color(0.86f, 0.72f, 1f, 1f)
+        };
+
+        private static readonly AgeVisualSet[] AgeVisualSets =
+        {
+            new AgeVisualSet(
+                "Barbarian",
+                "Barbarian/Base/Base",
+                "Barbarian/Units",
+                new[] { "Hunter", "Thrower", "Champion" },
+                "Barbarian/Towers/BoneTower/attack_",
+                new Color(1f, 0.94f, 0.78f, 1f)),
+            new AgeVisualSet(
+                "Machine",
+                "Machine/Base/Base",
+                "Machine/Units",
+                new[] { "GearSoldier", "SteamCrossbow", "SiegeRoller" },
+                "Machine/Towers/GearTower/attack_",
+                new Color(0.88f, 0.86f, 0.78f, 1f))
         };
 
         private static readonly AgePowerDefinition[] AgePowers =
@@ -313,6 +332,8 @@ namespace WarOfEras.Battle.Core
         private Transform routePreviewRoot;
         private Transform buildPreviewRoot;
         private Transform facilityMarkerRoot;
+        private SpriteRenderer playerBaseRenderer;
+        private SpriteRenderer enemyBaseRenderer;
         private Material routePreviewMaterial;
         private Material vfxLineMaterial;
         private RectTransform startHintPanel;
@@ -714,7 +735,12 @@ namespace WarOfEras.Battle.Core
             playerUnitDefinitions = BuildUnitDefinitionsForAge(ageIndex);
             enemyUnitDefinitions = BuildEnemyDefinitions(playerUnitDefinitions);
             currentTowerDefinition = BuildTowerDefinitionForAge(ageIndex);
-            towerFrames = LoadFrames("Barbarian/Towers/BoneTower/attack_", 5, 100f);
+            towerFrames = LoadFrames(GetAgeVisualSet(ageIndex).TowerFramePrefix, 5, 100f, AgeVisualSets[0].TowerFramePrefix);
+        }
+
+        private static AgeVisualSet GetAgeVisualSet(int index)
+        {
+            return AgeVisualSets[Mathf.Clamp(index, 0, AgeVisualSets.Length - 1)];
         }
 
         private UnitDefinition[] BuildUnitDefinitionsForAge(int index)
@@ -725,37 +751,37 @@ namespace WarOfEras.Battle.Core
                 case 1:
                     return new[]
                     {
-                        CreateUnitDefinition("\u9f7f\u8f6e\u5175", "GearSoldier", 50, 115f, 30f, 1.05f, 0.58f, 0.95f, 0.35f, "Hunter", tint),
-                        CreateUnitDefinition("\u84b8\u6c7d\u5f29\u624b", "SteamCrossbow", 75, 90f, 14f, 0.95f, 2.75f, 0.8f, 0.34f, "Thrower", tint),
-                        CreateUnitDefinition("\u94c1\u8f6e\u7834\u57ce\u8f66", "SiegeRoller", 500, 340f, 78f, 0.72f, 1.1f, 1.45f, 0.44f, "Champion", tint)
+                        CreateUnitDefinition("\u9f7f\u8f6e\u5175", "GearSoldier", 50, 115f, 30f, 1.05f, 0.58f, 0.95f, 0.35f, 0, tint),
+                        CreateUnitDefinition("\u84b8\u6c7d\u5f29\u624b", "SteamCrossbow", 75, 90f, 14f, 0.95f, 2.75f, 0.8f, 0.34f, 1, tint),
+                        CreateUnitDefinition("\u94c1\u8f6e\u7834\u57ce\u8f66", "SiegeRoller", 500, 340f, 78f, 0.72f, 1.1f, 1.45f, 0.44f, 2, tint)
                     };
                 case 2:
                     return new[]
                     {
-                        CreateUnitDefinition("\u7535\u51fb\u5175", "VoltGuard", 200, 230f, 82f, 1.12f, 0.6f, 0.95f, 0.36f, "Hunter", tint),
-                        CreateUnitDefinition("\u7ebf\u5708\u5c04\u624b", "CoilShooter", 400, 180f, 32f, 1f, 3.0f, 0.62f, 0.35f, "Thrower", tint),
-                        CreateUnitDefinition("\u5c65\u5e26\u6218\u8f66", "CrawlerTank", 1000, 720f, 150f, 0.65f, 1.55f, 1.5f, 0.46f, "Champion", tint)
+                        CreateUnitDefinition("\u7535\u51fb\u5175", "VoltGuard", 200, 230f, 82f, 1.12f, 0.6f, 0.95f, 0.36f, 0, tint),
+                        CreateUnitDefinition("\u7ebf\u5708\u5c04\u624b", "CoilShooter", 400, 180f, 32f, 1f, 3.0f, 0.62f, 0.35f, 1, tint),
+                        CreateUnitDefinition("\u5c65\u5e26\u6218\u8f66", "CrawlerTank", 1000, 720f, 150f, 0.65f, 1.55f, 1.5f, 0.46f, 2, tint)
                     };
                 case 3:
                     return new[]
                     {
-                        CreateUnitDefinition("\u8f90\u5c04\u6b65\u5175", "RadTrooper", 1500, 420f, 120f, 1.2f, 0.62f, 0.82f, 0.36f, "Hunter", tint),
-                        CreateUnitDefinition("\u88c2\u53d8\u67aa\u5175", "FissionLancer", 2000, 360f, 46f, 1.05f, 3.08f, 0.46f, 0.35f, "Thrower", tint),
-                        CreateUnitDefinition("\u6838\u80fd\u5766\u514b", "NuclearTank", 7000, 1500f, 320f, 0.6f, 1.8f, 1.64f, 0.48f, "Champion", tint)
+                        CreateUnitDefinition("\u8f90\u5c04\u6b65\u5175", "RadTrooper", 1500, 420f, 120f, 1.2f, 0.62f, 0.82f, 0.36f, 0, tint),
+                        CreateUnitDefinition("\u88c2\u53d8\u67aa\u5175", "FissionLancer", 2000, 360f, 46f, 1.05f, 3.08f, 0.46f, 0.35f, 1, tint),
+                        CreateUnitDefinition("\u6838\u80fd\u5766\u514b", "NuclearTank", 7000, 1500f, 320f, 0.6f, 1.8f, 1.64f, 0.48f, 2, tint)
                     };
                 case 4:
                     return new[]
                     {
-                        CreateUnitDefinition("\u6fc0\u5149\u5175", "LaserTrooper", 5000, 1000f, 260f, 1.3f, 0.75f, 0.8f, 0.37f, "Hunter", tint),
-                        CreateUnitDefinition("\u6d6e\u6e38\u673a\u7532", "SkimmerMech", 6000, 820f, 95f, 1.15f, 3.25f, 0.38f, 0.36f, "Thrower", tint),
-                        CreateUnitDefinition("\u53cd\u7269\u8d28\u5de8\u50cf", "AntimatterColossus", 20000, 3200f, 720f, 0.5f, 2.1f, 1.8f, 0.5f, "Champion", tint)
+                        CreateUnitDefinition("\u6fc0\u5149\u5175", "LaserTrooper", 5000, 1000f, 260f, 1.3f, 0.75f, 0.8f, 0.37f, 0, tint),
+                        CreateUnitDefinition("\u6d6e\u6e38\u673a\u7532", "SkimmerMech", 6000, 820f, 95f, 1.15f, 3.25f, 0.38f, 0.36f, 1, tint),
+                        CreateUnitDefinition("\u53cd\u7269\u8d28\u5de8\u50cf", "AntimatterColossus", 20000, 3200f, 720f, 0.5f, 2.1f, 1.8f, 0.5f, 2, tint)
                     };
                 default:
                     return new[]
                     {
-                        CreateUnitDefinition("\u77f3\u68d2\u6218\u58eb", "StoneWarrior", 15, 60f, 16f, 1f, 0.55f, 1f, 0.34f, "Hunter", tint),
-                        CreateUnitDefinition("\u6295\u77f3\u730e\u624b", "StoneThrower", 25, 48f, 9f, 0.9f, 2.35f, 0.95f, 0.33f, "Thrower", tint),
-                        CreateUnitDefinition("\u5de8\u9aa8\u52c7\u58eb", "BoneChampion", 100, 180f, 42f, 0.7f, 0.95f, 1.35f, 0.42f, "Champion", tint)
+                        CreateUnitDefinition("\u77f3\u68d2\u6218\u58eb", "StoneWarrior", 15, 60f, 16f, 1f, 0.55f, 1f, 0.34f, 0, tint),
+                        CreateUnitDefinition("\u6295\u77f3\u730e\u624b", "StoneThrower", 25, 48f, 9f, 0.9f, 2.35f, 0.95f, 0.33f, 1, tint),
+                        CreateUnitDefinition("\u5de8\u9aa8\u52c7\u58eb", "BoneChampion", 100, 180f, 42f, 0.7f, 0.95f, 1.35f, 0.42f, 2, tint)
                     };
             }
         }
@@ -770,9 +796,14 @@ namespace WarOfEras.Battle.Core
             float attackRange,
             float attackInterval,
             float scale,
-            string frameFolder,
+            int visualSlot,
             Color tint)
         {
+            var visualSet = GetAgeVisualSet(ageIndex);
+            visualSlot = Mathf.Clamp(visualSlot, 0, visualSet.UnitFrameFolders.Length - 1);
+            var frameFolder = visualSet.UnitFrameFolders[visualSlot];
+            var fallbackFolder = AgeVisualSets[0].UnitFrameFolders[Mathf.Clamp(visualSlot, 0, AgeVisualSets[0].UnitFrameFolders.Length - 1)];
+
             return new UnitDefinition(
                 displayName,
                 key,
@@ -784,8 +815,8 @@ namespace WarOfEras.Battle.Core
                 attackInterval,
                 scale,
                 Mathf.Max(1, Mathf.RoundToInt(cost * 0.35f)),
-                LoadFrames("Barbarian/Units/" + frameFolder + "/move_", 5, 100f),
-                LoadFrames("Barbarian/Units/" + frameFolder + "/attack_", 5, 100f),
+                LoadFrames(visualSet.UnitRoot + "/" + frameFolder + "/move_", 5, 100f, AgeVisualSets[0].UnitRoot + "/" + fallbackFolder + "/move_"),
+                LoadFrames(visualSet.UnitRoot + "/" + frameFolder + "/attack_", 5, 100f, AgeVisualSets[0].UnitRoot + "/" + fallbackFolder + "/attack_"),
                 tint);
         }
 
@@ -1384,15 +1415,37 @@ namespace WarOfEras.Battle.Core
 
         private void CreateBaseArt()
         {
-            var baseSprite = LoadSprite("Barbarian/Base/Base", 100f, new Rect(250f, 80f, 1170f, 740f));
-            var playerBase = CreateSprite("Player Barbarian Base Art", baseSprite, playerBasePosition, 3);
-            playerBase.transform.localScale = Vector3.one * baseVisualScale;
-            playerBase.color = new Color(1f, 0.96f, 0.86f, 0.88f);
+            var baseSprite = LoadAgeBaseSprite();
+            playerBaseRenderer = CreateSprite("Player Base Art", baseSprite, playerBasePosition, 3);
+            enemyBaseRenderer = CreateSprite("Enemy Base Art", baseSprite, enemyBasePosition, 3);
+            enemyBaseRenderer.flipX = true;
+            RefreshBaseVisuals();
+        }
 
-            var enemyBase = CreateSprite("Enemy Barbarian Base Art", baseSprite, enemyBasePosition, 3);
-            enemyBase.flipX = true;
-            enemyBase.transform.localScale = Vector3.one * baseVisualScale;
-            enemyBase.color = new Color(1f, 0.66f, 0.58f, 0.78f);
+        private Sprite LoadAgeBaseSprite()
+        {
+            var visualSet = GetAgeVisualSet(ageIndex);
+            return LoadSprite(visualSet.BaseSpritePath, 100f, BaseArtRect, AgeVisualSets[0].BaseSpritePath);
+        }
+
+        private void RefreshBaseVisuals()
+        {
+            var baseSprite = LoadAgeBaseSprite();
+            var visualSet = GetAgeVisualSet(ageIndex);
+            if (playerBaseRenderer != null)
+            {
+                playerBaseRenderer.sprite = baseSprite;
+                playerBaseRenderer.transform.localScale = Vector3.one * baseVisualScale;
+                playerBaseRenderer.color = Color.Lerp(new Color(1f, 0.96f, 0.86f, 0.9f), visualSet.FallbackTint, 0.28f);
+            }
+
+            if (enemyBaseRenderer != null)
+            {
+                enemyBaseRenderer.sprite = baseSprite;
+                enemyBaseRenderer.flipX = true;
+                enemyBaseRenderer.transform.localScale = Vector3.one * baseVisualScale;
+                enemyBaseRenderer.color = Color.Lerp(new Color(1f, 0.66f, 0.58f, 0.82f), visualSet.FallbackTint, 0.18f);
+            }
         }
 
         private void CreateResourceWellSiteMarkers()
@@ -3047,10 +3100,31 @@ namespace WarOfEras.Battle.Core
             activeRouteCandidate = null;
             ClearRoutePreviews();
             BuildDefinitions();
+            RefreshBaseVisuals();
+            RefreshExistingTowers();
             UpdateUnitButtonDefinitions();
             SwitchEraAmbience(ageIndex, false);
             var pathName = path == EvolutionPath.Attack ? AttackPathNames[ageIndex - 1] : DefensePathNames[ageIndex - 1];
             status = "\u9009\u62e9\u300c" + pathName + "\u300d\uff0c\u8fdb\u5165" + AgeNames[ageIndex] + "\u3002";
+        }
+
+        private void RefreshExistingTowers()
+        {
+            for (var i = 0; i < playerTowers.Length; i++)
+            {
+                if (playerTowers[i] != null)
+                {
+                    playerTowers[i].RefreshVisuals(currentTowerDefinition, towerFrames);
+                }
+            }
+
+            for (var i = 0; i < enemyTowers.Length; i++)
+            {
+                if (enemyTowers[i] != null)
+                {
+                    enemyTowers[i].RefreshVisuals(currentTowerDefinition, towerFrames);
+                }
+            }
         }
 
         private void GainEraValue(float amount)
@@ -3333,12 +3407,17 @@ namespace WarOfEras.Battle.Core
             }
         }
 
-        private Sprite[] LoadFrames(string prefix, int frameCount, float pixelsPerUnit)
+        private Sprite[] LoadFrames(string prefix, int frameCount, float pixelsPerUnit, string fallbackPrefix = null)
         {
             var frames = new List<Sprite>();
             for (var i = 1; i <= frameCount; i++)
             {
-                var frame = LoadSprite(prefix + i.ToString("00"), pixelsPerUnit);
+                var frame = TryLoadSprite(prefix + i.ToString("00"), pixelsPerUnit);
+                if (frame == null && !string.IsNullOrEmpty(fallbackPrefix))
+                {
+                    frame = TryLoadSprite(fallbackPrefix + i.ToString("00"), pixelsPerUnit);
+                }
+
                 if (frame != null)
                 {
                     frames.Add(frame);
@@ -3355,27 +3434,52 @@ namespace WarOfEras.Battle.Core
 
         private Sprite LoadSprite(string resourcePath, float pixelsPerUnit)
         {
-            var texture = Resources.Load<Texture2D>(resourcePath);
-            if (texture == null)
+            var sprite = TryLoadSprite(resourcePath, pixelsPerUnit);
+            if (sprite != null)
             {
-                Debug.LogWarning("Missing battle art resource: " + resourcePath);
-                return WhiteSprite;
+                return sprite;
             }
 
-            return Sprite.Create(
-                texture,
-                new Rect(0f, 0f, texture.width, texture.height),
-                new Vector2(0.5f, 0.5f),
-                pixelsPerUnit);
+            return WhiteSprite;
         }
 
-        private Sprite LoadSprite(string resourcePath, float pixelsPerUnit, Rect spriteRect)
+        private Sprite TryLoadSprite(string resourcePath, float pixelsPerUnit)
         {
             var texture = Resources.Load<Texture2D>(resourcePath);
             if (texture == null)
             {
                 Debug.LogWarning("Missing battle art resource: " + resourcePath);
-                return WhiteSprite;
+                return null;
+            }
+
+            var sprite = Sprite.Create(
+                texture,
+                new Rect(0f, 0f, texture.width, texture.height),
+                new Vector2(0.5f, 0.5f),
+                pixelsPerUnit);
+            sprite.name = resourcePath;
+            return sprite;
+        }
+
+        private Sprite LoadSprite(string resourcePath, float pixelsPerUnit, Rect spriteRect, string fallbackResourcePath = null)
+        {
+            var texture = Resources.Load<Texture2D>(resourcePath);
+            var actualResourcePath = resourcePath;
+            if (texture == null)
+            {
+                Debug.LogWarning("Missing battle art resource: " + resourcePath);
+                if (string.IsNullOrEmpty(fallbackResourcePath))
+                {
+                    return WhiteSprite;
+                }
+
+                actualResourcePath = fallbackResourcePath;
+                texture = Resources.Load<Texture2D>(fallbackResourcePath);
+                if (texture == null)
+                {
+                    Debug.LogWarning("Missing battle art resource: " + fallbackResourcePath);
+                    return WhiteSprite;
+                }
             }
 
             var clampedRect = new Rect(
@@ -3384,7 +3488,9 @@ namespace WarOfEras.Battle.Core
                 Mathf.Min(spriteRect.width, texture.width - spriteRect.x),
                 Mathf.Min(spriteRect.height, texture.height - spriteRect.y));
 
-            return Sprite.Create(texture, clampedRect, new Vector2(0.5f, 0.5f), pixelsPerUnit);
+            var sprite = Sprite.Create(texture, clampedRect, new Vector2(0.5f, 0.5f), pixelsPerUnit);
+            sprite.name = actualResourcePath;
+            return sprite;
         }
 
         private Button CreateButton(RectTransform parent, string name, string label, UnityEngine.Events.UnityAction onClick, Color normalColor)
@@ -3900,6 +4006,26 @@ namespace WarOfEras.Battle.Core
             public Button Button { get; }
             public Text Label { get; }
             public UnitDefinition Definition { get; set; }
+        }
+
+        private sealed class AgeVisualSet
+        {
+            public AgeVisualSet(string key, string baseSpritePath, string unitRoot, string[] unitFrameFolders, string towerFramePrefix, Color fallbackTint)
+            {
+                Key = key;
+                BaseSpritePath = baseSpritePath;
+                UnitRoot = unitRoot;
+                UnitFrameFolders = unitFrameFolders;
+                TowerFramePrefix = towerFramePrefix;
+                FallbackTint = fallbackTint;
+            }
+
+            public string Key { get; }
+            public string BaseSpritePath { get; }
+            public string UnitRoot { get; }
+            public string[] UnitFrameFolders { get; }
+            public string TowerFramePrefix { get; }
+            public Color FallbackTint { get; }
         }
 
         private readonly struct RouteEdge
@@ -4578,6 +4704,30 @@ namespace WarOfEras.Battle.Core
             CreateGroundShadow();
 
             spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
+            spriteRenderer.sprite = frames != null && frames.Length > 0 ? frames[0] : null;
+            spriteRenderer.color = definition != null ? definition.Tint : new Color(1f, 0.94f, 0.78f, 1f);
+            spriteRenderer.flipX = team == 1;
+            if (team == 1)
+            {
+                spriteRenderer.color = Color.Lerp(spriteRenderer.color, new Color(1f, 0.42f, 0.32f, 1f), 0.38f);
+            }
+
+            UpdateGroundShadow();
+            UpdateSorting();
+        }
+
+        public void RefreshVisuals(TowerDefinition towerDefinition, Sprite[] towerFrames)
+        {
+            definition = towerDefinition;
+            frames = towerFrames;
+            frameIndex = 0;
+            frameTimer = 0f;
+
+            if (spriteRenderer == null)
+            {
+                return;
+            }
+
             spriteRenderer.sprite = frames != null && frames.Length > 0 ? frames[0] : null;
             spriteRenderer.color = definition != null ? definition.Tint : new Color(1f, 0.94f, 0.78f, 1f);
             spriteRenderer.flipX = team == 1;

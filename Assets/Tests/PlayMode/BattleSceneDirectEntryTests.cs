@@ -5,6 +5,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 
 namespace WarOfEras.Tests
 {
@@ -23,8 +24,8 @@ namespace WarOfEras.Tests
             var controller = FindFirstObjectByType(ControllerType);
             Assert.NotNull(controller, "Battle scene should include a BattleGameController.");
 
-            AssertSpriteAt("Player Barbarian Base Art", GetVector3Property(layout, "PlayerBasePosition"));
-            AssertSpriteAt("Enemy Barbarian Base Art", GetVector3Property(layout, "EnemyBasePosition"));
+            AssertSpriteAt("Player Base Art", GetVector3Property(layout, "PlayerBasePosition"));
+            AssertSpriteAt("Enemy Base Art", GetVector3Property(layout, "EnemyBasePosition"));
 
             var playerWells = InvokeVector3Array(layout, "GetPlayerResourceWellPositions");
             var enemyWells = InvokeVector3Array(layout, "GetEnemyResourceWellPositions");
@@ -78,6 +79,47 @@ namespace WarOfEras.Tests
         }
 
         [UnityTest]
+        public IEnumerator FirstAgeUpgrade_AppliesMachineWorkshopAssets()
+        {
+            yield return LoadScene("Battle");
+            yield return null;
+
+            var controller = FindFirstObjectByType(ControllerType);
+            Assert.NotNull(controller);
+
+            var buildTowerAt = ControllerType.GetMethod("BuildTowerAt", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(buildTowerAt);
+            buildTowerAt.Invoke(controller, new object[] { 0 });
+            var existingTower = Object.FindObjectsByType(TowerType, FindObjectsSortMode.None).Cast<Component>().Single();
+            AssertSpriteResource(GetFirstTowerFrame(existingTower), "Barbarian/Towers/BoneTower/attack_01");
+
+            var baseRenderer = GameObject.Find("Player Base Art").GetComponent<SpriteRenderer>();
+            Assert.NotNull(baseRenderer);
+            AssertSpriteResource(baseRenderer.sprite, "Barbarian/Base/Base");
+
+            var threshold = InvokeInt(controller, "GetCurrentEraThreshold");
+            SetPrivateField(controller, "eraValue", (float)threshold);
+            InvokeUpgradeAge(controller, "Attack");
+            yield return null;
+
+            Assert.AreEqual(1, GetPrivateField<int>(controller, "ageIndex"));
+            AssertSpriteResource(baseRenderer.sprite, "Machine/Base/Base");
+            AssertSpriteResource(GetFirstTowerFrame(existingTower), "Machine/Towers/GearTower/attack_01");
+
+            AssertUnitButtonLabels(controller, "\u9f7f\u8f6e\u5175", "\u84b8\u6c7d\u5f29\u624b", "\u94c1\u8f6e\u7834\u57ce\u8f66");
+            AssertTowerButtonLabel(controller, "\u9f7f\u8f6e\u629b\u70ae\u5854");
+
+            var definitions = GetPlayerDefinitions(controller);
+            Assert.AreEqual("GearSoldier", GetStringProperty(definitions[0], "Key"));
+            AssertSpriteResource(GetFirstUnitMoveFrame(definitions[0]), "Machine/Units/GearSoldier/move_01");
+
+            var unit = SpawnPlayerUnit(controller, 1);
+            var definition = GetProperty<object>(unit, "Definition");
+            Assert.AreEqual("GearSoldier", GetStringProperty(definition, "Key"));
+            AssertSpriteResource(GetFirstUnitMoveFrame(definition), "Machine/Units/GearSoldier/move_01");
+        }
+
+        [UnityTest]
         public IEnumerator MainMenuStart_LoadsBattleSceneWithLayout()
         {
             yield return LoadScene("MainMenu");
@@ -127,7 +169,7 @@ namespace WarOfEras.Tests
 
             var units = Object.FindObjectsByType(ActiveUnitType, FindObjectsSortMode.None).Cast<Component>().ToArray();
             Assert.Greater(units.Length, 0);
-            return units[0];
+            return units.OrderBy(unit => unit.transform.position.x).First();
         }
 
         private static object[] GetPlayerDefinitions(Component controller)
@@ -138,6 +180,98 @@ namespace WarOfEras.Tests
             Assert.NotNull(definitions);
             Assert.Greater(definitions.Length, 0);
             return definitions;
+        }
+
+        private static System.Type TowerType => RequiredType("WarOfEras.Battle.Core.BattleTower");
+
+        private static void InvokeUpgradeAge(Component controller, string pathName)
+        {
+            var evolutionType = ControllerType.GetNestedType("EvolutionPath", BindingFlags.NonPublic);
+            Assert.NotNull(evolutionType);
+            var value = System.Enum.Parse(evolutionType, pathName);
+            var upgradeAge = ControllerType.GetMethod("UpgradeAge", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(upgradeAge);
+            upgradeAge.Invoke(controller, new[] { value });
+        }
+
+        private static int InvokeInt(Component target, string methodName)
+        {
+            var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+            return (int)method.Invoke(target, null);
+        }
+
+        private static void SetPrivateField<T>(Component target, string fieldName, T value)
+        {
+            var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            field.SetValue(target, value);
+        }
+
+        private static T GetPrivateField<T>(Component target, string fieldName)
+        {
+            var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            return (T)field.GetValue(target);
+        }
+
+        private static T GetProperty<T>(object target, string propertyName)
+        {
+            var property = target.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+            Assert.NotNull(property);
+            return (T)property.GetValue(target);
+        }
+
+        private static string GetStringProperty(object target, string propertyName)
+        {
+            return GetProperty<string>(target, propertyName);
+        }
+
+        private static Sprite GetFirstUnitMoveFrame(object definition)
+        {
+            var frames = GetProperty<Sprite[]>(definition, "MoveFrames");
+            Assert.NotNull(frames);
+            Assert.Greater(frames.Length, 0);
+            return frames[0];
+        }
+
+        private static Sprite GetFirstTowerFrame(Component tower)
+        {
+            var framesField = TowerType.GetField("frames", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(framesField);
+            var frames = (Sprite[])framesField.GetValue(tower);
+            Assert.NotNull(frames);
+            Assert.Greater(frames.Length, 0);
+            return frames[0];
+        }
+
+        private static void AssertSpriteResource(Sprite sprite, string expectedName)
+        {
+            Assert.NotNull(sprite);
+            Assert.AreEqual(expectedName, sprite.name);
+        }
+
+        private static void AssertUnitButtonLabels(Component controller, params string[] expectedLabels)
+        {
+            var buttonsField = ControllerType.GetField("unitButtons", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(buttonsField);
+            var bindings = ((System.Collections.IEnumerable)buttonsField.GetValue(controller)).Cast<object>().ToArray();
+            Assert.GreaterOrEqual(bindings.Length, expectedLabels.Length);
+
+            for (var i = 0; i < expectedLabels.Length; i++)
+            {
+                var label = GetProperty<Text>(bindings[i], "Label");
+                Assert.NotNull(label);
+                StringAssert.Contains(expectedLabels[i], label.text);
+            }
+        }
+
+        private static void AssertTowerButtonLabel(Component controller, string expectedLabel)
+        {
+            var button = GetPrivateField<Button>(controller, "towerButton");
+            Assert.NotNull(button);
+            var labels = button.GetComponentsInChildren<Text>(true);
+            Assert.IsTrue(labels.Any(label => label.text.Contains(expectedLabel)), "Tower button should contain label: " + expectedLabel);
         }
 
         private static System.Type ControllerType => RequiredType("WarOfEras.Battle.Core.BattleGameController");

@@ -6,7 +6,7 @@ namespace WarOfEras.Battle.Core
     public sealed class BattleLayout : MonoBehaviour
     {
         [SerializeField] private float unitVisualScale = 0.82f;
-        [SerializeField] private float baseVisualScale = 0.053333334f;
+        [SerializeField] private float baseVisualScale = 0.16f;
         [SerializeField] private float towerVisualScale = 0.053333334f;
         [SerializeField] private float resourceWellVisualScale = 0.24f;
 

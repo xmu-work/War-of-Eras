@@ -3,7 +3,7 @@ guid: 0b1da1ec5e073b54cad26d1711cbccaa
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 1314702571698072358
+      213: 2377978815599997760
     second: ForestThreeLanes_0
   externalObjects: {}
   serializedVersion: 13
@@ -51,7 +51,6 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 100
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -106,38 +105,38 @@ TextureImporter:
         x: 0
         y: 0
         width: 1672
-        height: 940
+        height: 941
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
+      customData:
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 62b2b5bf503ce3210800000000000000
-      internalID: 1314702571698072358
+      spriteID: 7b1187eb7b2c50f4ad517c8cc8b600a7
+      internalID: 2377978815599997760
       vertices: []
-      indices: 
+      indices:
       edges: []
       weights: []
     outline: []
-    customData: 
+    customData:
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID:
     internalID: 0
     vertices: []
-    indices: 
+    indices:
     edges: []
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      ForestThreeLanes_0: 1314702571698072358
-  mipmapLimitGroupName: 
+      ForestThreeLanes_0: 2377978815599997760
+  mipmapLimitGroupName:
   pSDRemoveMatte: 0
-  userData: 
-  assetBundleName: 
-  assetBundleVariant: 
+  userData:
+  assetBundleName:
+  assetBundleVariant:

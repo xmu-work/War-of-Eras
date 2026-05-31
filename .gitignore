@@ -9,9 +9,11 @@ UserSettings/
 
 # IDE / tooling
 .vs/
+.vscode/
 .idea/
 *.csproj
 *.sln
+*.slnx
 *.suo
 *.user
 *.userprefs
@@ -36,3 +38,7 @@ tmp/
 *.pdb
 *.mdb
 
+# Local agent / brainstorming artifacts
+.agents/
+.superpowers/
+skills-lock.json

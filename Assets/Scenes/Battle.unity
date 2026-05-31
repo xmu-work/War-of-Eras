@@ -270,7 +270,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   unitVisualScale: 0.82
-  baseVisualScale: 0.053333334
+  baseVisualScale: 0.16
   towerVisualScale: 0.053333334
   resourceWellVisualScale: 0.24
 --- !u!1 &300000

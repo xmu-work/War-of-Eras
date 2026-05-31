@@ -11,6 +11,75 @@ namespace WarOfEras.Tests
 {
     public sealed class BattleSceneDirectEntryTests
     {
+        private static readonly PeriodExpectation[] Periods =
+        {
+            new PeriodExpectation(
+                "Barbarian",
+                "Barbarian/Maps/ForestThreeLanes",
+                "Barbarian/Base/Base",
+                "Barbarian/Towers/BoneTower/attack_01",
+                new[] { "Hunter", "Thrower", "Champion" },
+                new[] { "\u77f3\u68d2\u6218\u58eb", "\u6295\u77f3\u730e\u624b", "\u5de8\u9aa8\u52c7\u58eb" },
+                "\u9aa8\u77f3\u5854"),
+            new PeriodExpectation(
+                "Machine",
+                "Machine/Maps/ForestThreeLanes",
+                "Machine/Base/Base",
+                "Machine/Towers/GearTower/attack_01",
+                new[] { "GearSoldier", "SteamCrossbow", "SiegeRoller" },
+                new[] { "\u9f7f\u8f6e\u5175", "\u84b8\u6c7d\u5f29\u624b", "\u94c1\u8f6e\u7834\u57ce\u8f66" },
+                "\u9f7f\u8f6e\u629b\u70ae\u5854"),
+            new PeriodExpectation(
+                "Electric",
+                "Electric/Maps/ForestThreeLanes",
+                "Electric/Base/Base",
+                "Electric/Towers/TeslaTower/attack_01",
+                new[] { "VoltGuard", "CoilShooter", "CrawlerTank" },
+                new[] { "\u7535\u51fb\u5175", "\u7ebf\u5708\u5c04\u624b", "\u5c65\u5e26\u6218\u8f66" },
+                "\u7279\u65af\u62c9\u5854"),
+            new PeriodExpectation(
+                "Nuclear",
+                "Nuclear/Maps/ForestThreeLanes",
+                "Nuclear/Base/Base",
+                "Nuclear/Towers/ParticleGunTower/attack_01",
+                new[] { "RadTrooper", "FissionLancer", "NuclearTank" },
+                new[] { "\u8f90\u5c04\u6b65\u5175", "\u88c2\u53d8\u67aa\u5175", "\u6838\u80fd\u5766\u514b" },
+                "\u7c92\u5b50\u673a\u67aa\u5854"),
+            new PeriodExpectation(
+                "Starsea",
+                "Starsea/Maps/ForestThreeLanes",
+                "Starsea/Base/Base",
+                "Starsea/Towers/TitaniumRayTower/attack_01",
+                new[] { "LaserTrooper", "SkimmerMech", "AntimatterColossus" },
+                new[] { "\u6fc0\u5149\u5175", "\u6d6e\u6e38\u673a\u7532", "\u53cd\u7269\u8d28\u5de8\u50cf" },
+                "\u949b\u6676\u5c04\u7ebf\u5854")
+        };
+
+        [Test]
+        public void FivePeriodGameplayResources_ArePresent()
+        {
+            foreach (var period in Periods)
+            {
+                AssertResourceTexture(period.MapResource, 1672, 941);
+                AssertResourceTexture(period.BaseResource, 768, 768);
+                for (var unitIndex = 0; unitIndex < period.UnitKeys.Length; unitIndex++)
+                {
+                    var unitKey = period.UnitKeys[unitIndex];
+                    for (var frame = 1; frame <= 5; frame++)
+                    {
+                        AssertResourceTexture(period.Key + "/Units/" + unitKey + "/move_" + frame.ToString("00"), 256, 256);
+                        AssertResourceTexture(period.Key + "/Units/" + unitKey + "/attack_" + frame.ToString("00"), 256, 256);
+                    }
+                }
+
+                var towerFolder = period.TowerFrameResource.Substring(0, period.TowerFrameResource.LastIndexOf('/'));
+                for (var frame = 1; frame <= 5; frame++)
+                {
+                    AssertResourceTexture(towerFolder + "/attack_" + frame.ToString("00"), 256, 256);
+                }
+            }
+        }
+
         [UnityTest]
         public IEnumerator BattleSceneDirectEntry_UsesSceneAuthoredLayout()
         {
@@ -79,7 +148,7 @@ namespace WarOfEras.Tests
         }
 
         [UnityTest]
-        public IEnumerator FirstAgeUpgrade_AppliesMachineWorkshopAssets()
+        public IEnumerator DirectBattle_UpgradesThroughFivePeriodVisuals()
         {
             yield return LoadScene("Battle");
             yield return null;
@@ -95,28 +164,27 @@ namespace WarOfEras.Tests
 
             var baseRenderer = GameObject.Find("Player Base Art").GetComponent<SpriteRenderer>();
             Assert.NotNull(baseRenderer);
-            AssertSpriteResource(baseRenderer.sprite, "Barbarian/Base/Base");
+            var mapRenderer = GetPrivateField<SpriteRenderer>(controller, "battlefieldMapRenderer");
+            Assert.NotNull(mapRenderer);
 
-            var threshold = InvokeInt(controller, "GetCurrentEraThreshold");
-            SetPrivateField(controller, "eraValue", (float)threshold);
-            InvokeUpgradeAge(controller, "Attack");
-            yield return null;
+            for (var age = 0; age < Periods.Length; age++)
+            {
+                if (age > 0)
+                {
+                    var threshold = InvokeInt(controller, "GetCurrentEraThreshold");
+                    SetPrivateField(controller, "eraValue", (float)threshold);
+                    InvokeUpgradeAge(controller, age % 2 == 0 ? "Defense" : "Attack");
+                    yield return null;
+                }
 
-            Assert.AreEqual(1, GetPrivateField<int>(controller, "ageIndex"));
-            AssertSpriteResource(baseRenderer.sprite, "Machine/Base/Base");
-            AssertSpriteResource(GetFirstTowerFrame(existingTower), "Machine/Towers/GearTower/attack_01");
+                Assert.AreEqual(age, GetPrivateField<int>(controller, "ageIndex"));
+                AssertPeriodVisuals(controller, baseRenderer, mapRenderer, existingTower, Periods[age]);
 
-            AssertUnitButtonLabels(controller, "\u9f7f\u8f6e\u5175", "\u84b8\u6c7d\u5f29\u624b", "\u94c1\u8f6e\u7834\u57ce\u8f66");
-            AssertTowerButtonLabel(controller, "\u9f7f\u8f6e\u629b\u70ae\u5854");
-
-            var definitions = GetPlayerDefinitions(controller);
-            Assert.AreEqual("GearSoldier", GetStringProperty(definitions[0], "Key"));
-            AssertSpriteResource(GetFirstUnitMoveFrame(definitions[0]), "Machine/Units/GearSoldier/move_01");
-
-            var unit = SpawnPlayerUnit(controller, 1);
-            var definition = GetProperty<object>(unit, "Definition");
-            Assert.AreEqual("GearSoldier", GetStringProperty(definition, "Key"));
-            AssertSpriteResource(GetFirstUnitMoveFrame(definition), "Machine/Units/GearSoldier/move_01");
+                var unit = SpawnPlayerUnit(controller, 1);
+                var definition = GetProperty<object>(unit, "Definition");
+                Assert.AreEqual(Periods[age].UnitKeys[0], GetStringProperty(definition, "Key"));
+                AssertSpriteResource(GetFirstUnitMoveFrame(definition), Periods[age].Key + "/Units/" + Periods[age].UnitKeys[0] + "/move_01");
+            }
         }
 
         [UnityTest]
@@ -138,7 +206,21 @@ namespace WarOfEras.Tests
             var layout = FindFirstObjectByType(LayoutType);
             Assert.NotNull(layout, "Battle scene loaded from main menu should include BattleLayout.");
             AssertLayoutValid(layout);
-            Assert.NotNull(FindFirstObjectByType(ControllerType));
+            var controller = FindFirstObjectByType(ControllerType);
+            Assert.NotNull(controller);
+
+            var baseRenderer = GameObject.Find("Player Base Art").GetComponent<SpriteRenderer>();
+            var mapRenderer = GetPrivateField<SpriteRenderer>(controller, "battlefieldMapRenderer");
+            AssertPeriodVisuals(controller, baseRenderer, mapRenderer, null, Periods[0]);
+
+            for (var age = 1; age < Periods.Length; age++)
+            {
+                var threshold = InvokeInt(controller, "GetCurrentEraThreshold");
+                SetPrivateField(controller, "eraValue", (float)threshold);
+                InvokeUpgradeAge(controller, "Attack");
+                yield return null;
+                AssertPeriodVisuals(controller, baseRenderer, mapRenderer, null, Periods[age]);
+            }
         }
 
         private static IEnumerator LoadScene(string sceneName)
@@ -162,6 +244,7 @@ namespace WarOfEras.Tests
         private static Component SpawnPlayerUnit(Component controller, int laneIndex)
         {
             var definitions = GetPlayerDefinitions(controller);
+            var before = Object.FindObjectsByType(ActiveUnitType, FindObjectsSortMode.None).Cast<Component>().ToArray();
 
             var spawnUnit = ControllerType.GetMethod("SpawnUnit", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(spawnUnit);
@@ -169,7 +252,7 @@ namespace WarOfEras.Tests
 
             var units = Object.FindObjectsByType(ActiveUnitType, FindObjectsSortMode.None).Cast<Component>().ToArray();
             Assert.Greater(units.Length, 0);
-            return units.OrderBy(unit => unit.transform.position.x).First();
+            return units.FirstOrDefault(unit => !before.Contains(unit)) ?? units.OrderBy(unit => unit.transform.position.x).First();
         }
 
         private static object[] GetPlayerDefinitions(Component controller)
@@ -251,6 +334,42 @@ namespace WarOfEras.Tests
             Assert.AreEqual(expectedName, sprite.name);
         }
 
+        private static void AssertResourceTexture(string resourcePath, int expectedWidth, int expectedHeight)
+        {
+            var texture = Resources.Load<Texture2D>(resourcePath);
+            Assert.NotNull(texture, "Missing resource texture: " + resourcePath);
+            Assert.AreEqual(expectedWidth, texture.width, resourcePath + " width mismatch.");
+            Assert.AreEqual(expectedHeight, texture.height, resourcePath + " height mismatch.");
+        }
+
+        private static void AssertPeriodVisuals(
+            Component controller,
+            SpriteRenderer baseRenderer,
+            SpriteRenderer mapRenderer,
+            Component existingTower,
+            PeriodExpectation period)
+        {
+            Assert.NotNull(baseRenderer);
+            Assert.NotNull(mapRenderer);
+            AssertSpriteResource(baseRenderer.sprite, period.BaseResource);
+            AssertSpriteResource(mapRenderer.sprite, period.MapResource);
+
+            if (existingTower != null)
+            {
+                AssertSpriteResource(GetFirstTowerFrame(existingTower), period.TowerFrameResource);
+            }
+
+            AssertUnitButtonLabels(controller, period.UnitLabels);
+            AssertTowerButtonLabel(controller, period.TowerLabel);
+
+            var definitions = GetPlayerDefinitions(controller);
+            for (var i = 0; i < period.UnitKeys.Length; i++)
+            {
+                Assert.AreEqual(period.UnitKeys[i], GetStringProperty(definitions[i], "Key"));
+                AssertSpriteResource(GetFirstUnitMoveFrame(definitions[i]), period.Key + "/Units/" + period.UnitKeys[i] + "/move_01");
+            }
+        }
+
         private static void AssertUnitButtonLabels(Component controller, params string[] expectedLabels)
         {
             var buttonsField = ControllerType.GetField("unitButtons", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -312,6 +431,28 @@ namespace WarOfEras.Tests
             var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
             Assert.NotNull(method);
             return (Vector3[])method.Invoke(target, parameters);
+        }
+
+        private sealed class PeriodExpectation
+        {
+            public PeriodExpectation(string key, string mapResource, string baseResource, string towerFrameResource, string[] unitKeys, string[] unitLabels, string towerLabel)
+            {
+                Key = key;
+                MapResource = mapResource;
+                BaseResource = baseResource;
+                TowerFrameResource = towerFrameResource;
+                UnitKeys = unitKeys;
+                UnitLabels = unitLabels;
+                TowerLabel = towerLabel;
+            }
+
+            public string Key { get; }
+            public string MapResource { get; }
+            public string BaseResource { get; }
+            public string TowerFrameResource { get; }
+            public string[] UnitKeys { get; }
+            public string[] UnitLabels { get; }
+            public string TowerLabel { get; }
         }
     }
 }

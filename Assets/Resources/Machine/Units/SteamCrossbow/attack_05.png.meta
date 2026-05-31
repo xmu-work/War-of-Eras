@@ -3,7 +3,7 @@ guid: f0dfd6ad5a5f4ed6a29c833ee2b14290
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -8464754224609284262
+      213: 7425745760933375909
     second: attack_05_0
   externalObjects: {}
   serializedVersion: 13
@@ -104,39 +104,39 @@ TextureImporter:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 331
-        height: 724
+        width: 256
+        height: 256
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
+      customData:
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7082ad5a32895eea860831b8bbb931cf
-      internalID: -8464754224609284262
+      spriteID: f9a6dfd1a35c5b9ea05ee5fc5860c0f0
+      internalID: 7425745760933375909
       vertices: []
-      indices: 
+      indices:
       edges: []
       weights: []
     outline: []
-    customData: 
+    customData:
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID:
     internalID: 0
     vertices: []
-    indices: 
+    indices:
     edges: []
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      attack_05_0: -8464754224609284262
-  mipmapLimitGroupName: 
+      attack_05_0: 7425745760933375909
+  mipmapLimitGroupName:
   pSDRemoveMatte: 0
-  userData: 
-  assetBundleName: 
-  assetBundleVariant: 
+  userData:
+  assetBundleName:
+  assetBundleVariant:

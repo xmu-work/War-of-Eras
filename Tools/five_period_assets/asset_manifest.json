@@ -1,0 +1,70 @@
+{
+  "mapSize": [1672, 941],
+  "spriteSheet": {
+    "columns": 5,
+    "rows": 1,
+    "transparentSource": "chroma-key"
+  },
+  "periods": [
+    {
+      "key": "Barbarian",
+      "displayName": "蛮荒部落",
+      "map": "Assets/Resources/Barbarian/Maps/ForestThreeLanes.png",
+      "base": "Assets/Resources/Barbarian/Base/Base.png",
+      "units": [
+        { "key": "Hunter", "move": "Assets/Resources/Barbarian/Units/Hunter/move_", "attack": "Assets/Resources/Barbarian/Units/Hunter/attack_" },
+        { "key": "Thrower", "move": "Assets/Resources/Barbarian/Units/Thrower/move_", "attack": "Assets/Resources/Barbarian/Units/Thrower/attack_" },
+        { "key": "Champion", "move": "Assets/Resources/Barbarian/Units/Champion/move_", "attack": "Assets/Resources/Barbarian/Units/Champion/attack_" }
+      ],
+      "tower": { "key": "BoneTower", "attack": "Assets/Resources/Barbarian/Towers/BoneTower/attack_" }
+    },
+    {
+      "key": "Machine",
+      "displayName": "机械工坊",
+      "map": "Assets/Resources/Machine/Maps/ForestThreeLanes.png",
+      "base": "Assets/Resources/Machine/Base/Base.png",
+      "units": [
+        { "key": "GearSoldier", "move": "Assets/Resources/Machine/Units/GearSoldier/move_", "attack": "Assets/Resources/Machine/Units/GearSoldier/attack_" },
+        { "key": "SteamCrossbow", "move": "Assets/Resources/Machine/Units/SteamCrossbow/move_", "attack": "Assets/Resources/Machine/Units/SteamCrossbow/attack_" },
+        { "key": "SiegeRoller", "move": "Assets/Resources/Machine/Units/SiegeRoller/move_", "attack": "Assets/Resources/Machine/Units/SiegeRoller/attack_" }
+      ],
+      "tower": { "key": "GearTower", "attack": "Assets/Resources/Machine/Towers/GearTower/attack_" }
+    },
+    {
+      "key": "Electric",
+      "displayName": "电力时代",
+      "map": "Assets/Resources/Electric/Maps/ForestThreeLanes.png",
+      "base": "Assets/Resources/Electric/Base/Base.png",
+      "units": [
+        { "key": "VoltGuard", "move": "Assets/Resources/Electric/Units/VoltGuard/move_", "attack": "Assets/Resources/Electric/Units/VoltGuard/attack_" },
+        { "key": "CoilShooter", "move": "Assets/Resources/Electric/Units/CoilShooter/move_", "attack": "Assets/Resources/Electric/Units/CoilShooter/attack_" },
+        { "key": "CrawlerTank", "move": "Assets/Resources/Electric/Units/CrawlerTank/move_", "attack": "Assets/Resources/Electric/Units/CrawlerTank/attack_" }
+      ],
+      "tower": { "key": "TeslaTower", "attack": "Assets/Resources/Electric/Towers/TeslaTower/attack_" }
+    },
+    {
+      "key": "Nuclear",
+      "displayName": "核能纪元",
+      "map": "Assets/Resources/Nuclear/Maps/ForestThreeLanes.png",
+      "base": "Assets/Resources/Nuclear/Base/Base.png",
+      "units": [
+        { "key": "RadTrooper", "move": "Assets/Resources/Nuclear/Units/RadTrooper/move_", "attack": "Assets/Resources/Nuclear/Units/RadTrooper/attack_" },
+        { "key": "FissionLancer", "move": "Assets/Resources/Nuclear/Units/FissionLancer/move_", "attack": "Assets/Resources/Nuclear/Units/FissionLancer/attack_" },
+        { "key": "NuclearTank", "move": "Assets/Resources/Nuclear/Units/NuclearTank/move_", "attack": "Assets/Resources/Nuclear/Units/NuclearTank/attack_" }
+      ],
+      "tower": { "key": "ParticleGunTower", "attack": "Assets/Resources/Nuclear/Towers/ParticleGunTower/attack_" }
+    },
+    {
+      "key": "Starsea",
+      "displayName": "星海文明",
+      "map": "Assets/Resources/Starsea/Maps/ForestThreeLanes.png",
+      "base": "Assets/Resources/Starsea/Base/Base.png",
+      "units": [
+        { "key": "LaserTrooper", "move": "Assets/Resources/Starsea/Units/LaserTrooper/move_", "attack": "Assets/Resources/Starsea/Units/LaserTrooper/attack_" },
+        { "key": "SkimmerMech", "move": "Assets/Resources/Starsea/Units/SkimmerMech/move_", "attack": "Assets/Resources/Starsea/Units/SkimmerMech/attack_" },
+        { "key": "AntimatterColossus", "move": "Assets/Resources/Starsea/Units/AntimatterColossus/move_", "attack": "Assets/Resources/Starsea/Units/AntimatterColossus/attack_" }
+      ],
+      "tower": { "key": "TitaniumRayTower", "attack": "Assets/Resources/Starsea/Towers/TitaniumRayTower/attack_" }
+    }
+  ]
+}

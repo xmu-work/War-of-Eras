@@ -38,14 +38,13 @@ namespace WarOfEras.Battle.Core
         private const float CameraEdgeScrollSpeed = 20f;
         private const float DefaultUnitVisualScale = 0.82f;
         private const float DefaultTowerVisualScale = 0.16f / 3f;
-        private const float DefaultBaseVisualScale = 0.16f / 3f;
+        private const float DefaultBaseVisualScale = 0.16f;
         private const float DefaultResourceWellVisualScale = 0.72f / 3f;
         private const int ResourceWellCost = 120;
         private const float ResourceWellIncomeBonus = 2.5f;
         private const float ResourceWellEraValue = 65f;
         private const float BuildPlacementClickRadius = 0.85f;
         private const float UnitCombatContactPadding = 0.34f;
-        private static readonly Rect BaseArtRect = new Rect(250f, 80f, 1170f, 740f);
 
         private static readonly string[] AgeNames =
         {
@@ -100,6 +99,7 @@ namespace WarOfEras.Battle.Core
         {
             new AgeVisualSet(
                 "Barbarian",
+                "Barbarian/Maps/ForestThreeLanes",
                 "Barbarian/Base/Base",
                 "Barbarian/Units",
                 new[] { "Hunter", "Thrower", "Champion" },
@@ -107,11 +107,36 @@ namespace WarOfEras.Battle.Core
                 new Color(1f, 0.94f, 0.78f, 1f)),
             new AgeVisualSet(
                 "Machine",
+                "Machine/Maps/ForestThreeLanes",
                 "Machine/Base/Base",
                 "Machine/Units",
                 new[] { "GearSoldier", "SteamCrossbow", "SiegeRoller" },
                 "Machine/Towers/GearTower/attack_",
-                new Color(0.88f, 0.86f, 0.78f, 1f))
+                new Color(0.88f, 0.86f, 0.78f, 1f)),
+            new AgeVisualSet(
+                "Electric",
+                "Electric/Maps/ForestThreeLanes",
+                "Electric/Base/Base",
+                "Electric/Units",
+                new[] { "VoltGuard", "CoilShooter", "CrawlerTank" },
+                "Electric/Towers/TeslaTower/attack_",
+                new Color(0.66f, 0.88f, 1f, 1f)),
+            new AgeVisualSet(
+                "Nuclear",
+                "Nuclear/Maps/ForestThreeLanes",
+                "Nuclear/Base/Base",
+                "Nuclear/Units",
+                new[] { "RadTrooper", "FissionLancer", "NuclearTank" },
+                "Nuclear/Towers/ParticleGunTower/attack_",
+                new Color(0.76f, 1f, 0.64f, 1f)),
+            new AgeVisualSet(
+                "Starsea",
+                "Starsea/Maps/ForestThreeLanes",
+                "Starsea/Base/Base",
+                "Starsea/Units",
+                new[] { "LaserTrooper", "SkimmerMech", "AntimatterColossus" },
+                "Starsea/Towers/TitaniumRayTower/attack_",
+                new Color(0.86f, 0.72f, 1f, 1f))
         };
 
         private static readonly AgePowerDefinition[] AgePowers =
@@ -366,6 +391,7 @@ namespace WarOfEras.Battle.Core
         private Image eraFill;
         private Image outcomeBackdropImage;
         private BattleMapDefinition selectedMap;
+        private SpriteRenderer battlefieldMapRenderer;
         private Vector3[][] laneRoutes = LaneRoutes;
         private Vector3[] routeNodes = RouteNodes;
         private RouteEdge[] routeEdges = RouteEdges;
@@ -779,9 +805,9 @@ namespace WarOfEras.Battle.Core
                 default:
                     return new[]
                     {
-                        CreateUnitDefinition("\u77f3\u68d2\u6218\u58eb", "StoneWarrior", 15, 60f, 16f, 1f, 0.55f, 1f, 0.34f, 0, tint),
-                        CreateUnitDefinition("\u6295\u77f3\u730e\u624b", "StoneThrower", 25, 48f, 9f, 0.9f, 2.35f, 0.95f, 0.33f, 1, tint),
-                        CreateUnitDefinition("\u5de8\u9aa8\u52c7\u58eb", "BoneChampion", 100, 180f, 42f, 0.7f, 0.95f, 1.35f, 0.42f, 2, tint)
+                        CreateUnitDefinition("\u77f3\u68d2\u6218\u58eb", "Hunter", 15, 60f, 16f, 1f, 0.55f, 1f, 0.34f, 0, tint),
+                        CreateUnitDefinition("\u6295\u77f3\u730e\u624b", "Thrower", 25, 48f, 9f, 0.9f, 2.35f, 0.95f, 0.33f, 1, tint),
+                        CreateUnitDefinition("\u5de8\u9aa8\u52c7\u58eb", "Champion", 100, 180f, 42f, 0.7f, 0.95f, 1.35f, 0.42f, 2, tint)
                     };
             }
         }
@@ -1155,10 +1181,9 @@ namespace WarOfEras.Battle.Core
             worldRoot = new GameObject("Playable Barbarian Battlefield").transform;
             worldRoot.SetParent(transform, false);
 
-            var mapSprite = LoadSprite(selectedMap.ResourcePath, MapPixelsPerUnit);
-            var map = CreateSprite(selectedMap.DisplayName + " Map", mapSprite, Vector3.zero, 0);
-            map.transform.localScale = Vector3.one;
-            CacheMapBounds(map.bounds);
+            battlefieldMapRenderer = CreateSprite(selectedMap.DisplayName + " Map", LoadAgeMapSprite(), Vector3.zero, 0);
+            battlefieldMapRenderer.transform.localScale = Vector3.one;
+            CacheMapBounds(battlefieldMapRenderer.bounds);
 
             facilityMarkerRoot = new GameObject("Facility Marker Root").transform;
             facilityMarkerRoot.SetParent(worldRoot, false);
@@ -1425,7 +1450,27 @@ namespace WarOfEras.Battle.Core
         private Sprite LoadAgeBaseSprite()
         {
             var visualSet = GetAgeVisualSet(ageIndex);
-            return LoadSprite(visualSet.BaseSpritePath, 100f, BaseArtRect, AgeVisualSets[0].BaseSpritePath);
+            return LoadSprite(visualSet.BaseSpritePath, 100f, AgeVisualSets[0].BaseSpritePath);
+        }
+
+        private Sprite LoadAgeMapSprite()
+        {
+            var visualSet = GetAgeVisualSet(ageIndex);
+            var fallbackPath = selectedMap != null ? selectedMap.ResourcePath : AgeVisualSets[0].MapSpritePath;
+            return LoadSprite(visualSet.MapSpritePath, MapPixelsPerUnit, fallbackPath);
+        }
+
+        private void RefreshMapVisuals()
+        {
+            if (battlefieldMapRenderer == null)
+            {
+                return;
+            }
+
+            battlefieldMapRenderer.sprite = LoadAgeMapSprite();
+            battlefieldMapRenderer.transform.localScale = Vector3.one;
+            CacheMapBounds(battlefieldMapRenderer.bounds);
+            ClampCameraToMap();
         }
 
         private void RefreshBaseVisuals()
@@ -3100,6 +3145,7 @@ namespace WarOfEras.Battle.Core
             activeRouteCandidate = null;
             ClearRoutePreviews();
             BuildDefinitions();
+            RefreshMapVisuals();
             RefreshBaseVisuals();
             RefreshExistingTowers();
             UpdateUnitButtonDefinitions();
@@ -3438,6 +3484,26 @@ namespace WarOfEras.Battle.Core
             if (sprite != null)
             {
                 return sprite;
+            }
+
+            return WhiteSprite;
+        }
+
+        private Sprite LoadSprite(string resourcePath, float pixelsPerUnit, string fallbackResourcePath)
+        {
+            var sprite = TryLoadSprite(resourcePath, pixelsPerUnit);
+            if (sprite != null)
+            {
+                return sprite;
+            }
+
+            if (!string.IsNullOrEmpty(fallbackResourcePath))
+            {
+                sprite = TryLoadSprite(fallbackResourcePath, pixelsPerUnit);
+                if (sprite != null)
+                {
+                    return sprite;
+                }
             }
 
             return WhiteSprite;
@@ -4010,9 +4076,10 @@ namespace WarOfEras.Battle.Core
 
         private sealed class AgeVisualSet
         {
-            public AgeVisualSet(string key, string baseSpritePath, string unitRoot, string[] unitFrameFolders, string towerFramePrefix, Color fallbackTint)
+            public AgeVisualSet(string key, string mapSpritePath, string baseSpritePath, string unitRoot, string[] unitFrameFolders, string towerFramePrefix, Color fallbackTint)
             {
                 Key = key;
+                MapSpritePath = mapSpritePath;
                 BaseSpritePath = baseSpritePath;
                 UnitRoot = unitRoot;
                 UnitFrameFolders = unitFrameFolders;
@@ -4021,6 +4088,7 @@ namespace WarOfEras.Battle.Core
             }
 
             public string Key { get; }
+            public string MapSpritePath { get; }
             public string BaseSpritePath { get; }
             public string UnitRoot { get; }
             public string[] UnitFrameFolders { get; }

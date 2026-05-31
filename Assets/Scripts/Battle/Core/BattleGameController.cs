@@ -36,10 +36,10 @@ namespace WarOfEras.Battle.Core
         private const float CameraZoomStep = 0.55f;
         private const float CameraEdgeScrollMargin = 36f;
         private const float CameraEdgeScrollSpeed = 20f;
-        public const float UnitVisualScaleMultiplier = 0.82f;
-        public const float TowerVisualScale = 0.16f / 3f;
-        private const float BaseVisualScale = 0.16f / 3f;
-        private const float ResourceWellVisualScale = 0.72f / 3f;
+        private const float DefaultUnitVisualScale = 0.82f;
+        private const float DefaultTowerVisualScale = 0.16f / 3f;
+        private const float DefaultBaseVisualScale = 0.16f / 3f;
+        private const float DefaultResourceWellVisualScale = 0.72f / 3f;
         private const int ResourceWellCost = 120;
         private const float ResourceWellIncomeBonus = 2.5f;
         private const float ResourceWellEraValue = 65f;
@@ -308,6 +308,7 @@ namespace WarOfEras.Battle.Core
         private Sprite[] towerFrames;
         private Font uiFont;
         private Camera gameplayCamera;
+        private BattleLayout battleLayout;
         private Transform worldRoot;
         private Transform routePreviewRoot;
         private Transform buildPreviewRoot;
@@ -344,6 +345,19 @@ namespace WarOfEras.Battle.Core
         private Image eraFill;
         private Image outcomeBackdropImage;
         private BattleMapDefinition selectedMap;
+        private Vector3[][] laneRoutes = LaneRoutes;
+        private Vector3[] routeNodes = RouteNodes;
+        private RouteEdge[] routeEdges = RouteEdges;
+        private Vector3[] playerTowerPositions = PlayerTowerPositions;
+        private Vector3[] enemyTowerPositions = EnemyTowerPositions;
+        private Vector3[] playerResourceWellPositions = PlayerResourceWellPositions;
+        private Vector3[] enemyResourceWellPositions = EnemyResourceWellPositions;
+        private Vector3 playerBasePosition = new Vector3(PlayerBaseX + 1.25f, -0.16f, 0f);
+        private Vector3 enemyBasePosition = new Vector3(EnemyBaseX - 1.25f, -0.16f, 0f);
+        private float unitVisualScale = DefaultUnitVisualScale;
+        private float towerVisualScale = DefaultTowerVisualScale;
+        private float baseVisualScale = DefaultBaseVisualScale;
+        private float resourceWellVisualScale = DefaultResourceWellVisualScale;
         private float incomePerSecond;
         private float enemySpawnIntervalScale;
 
@@ -414,6 +428,7 @@ namespace WarOfEras.Battle.Core
 
             uiFont = CreateUiFont();
             ApplyGameSetup();
+            InitializeBattleLayout();
             BuildDefinitions();
             ConfigureCamera();
             ConfigureAmbienceAudio();
@@ -458,14 +473,24 @@ namespace WarOfEras.Battle.Core
 
         public bool IsGameOver => gameOver;
 
+        public float UnitVisualScale => unitVisualScale;
+
+        public float TowerVisualScale => towerVisualScale;
+
         public float GetLaneY(int laneIndex)
         {
+            var route = GetLaneRoute(laneIndex);
+            if (route.Length > 0)
+            {
+                return route[Mathf.Clamp(route.Length / 2, 0, route.Length - 1)].y;
+            }
+
             return LaneY[Mathf.Clamp(laneIndex, 0, LaneY.Length - 1)];
         }
 
         public Vector3[] GetLaneRoute(int laneIndex)
         {
-            return LaneRoutes[Mathf.Clamp(laneIndex, 0, LaneRoutes.Length - 1)];
+            return laneRoutes[Mathf.Clamp(laneIndex, 0, laneRoutes.Length - 1)];
         }
 
         public static float GetUnitEngageDistance(UnitDefinition definition)
@@ -496,12 +521,17 @@ namespace WarOfEras.Battle.Core
 
         public Vector3 GetPlayerTowerPosition(int laneIndex)
         {
-            return PlayerTowerPositions[Mathf.Clamp(laneIndex, 0, PlayerTowerPositions.Length - 1)];
+            return playerTowerPositions[Mathf.Clamp(laneIndex, 0, playerTowerPositions.Length - 1)];
         }
 
         public Vector3 GetEnemyTowerPosition(int laneIndex)
         {
-            return EnemyTowerPositions[Mathf.Clamp(laneIndex, 0, EnemyTowerPositions.Length - 1)];
+            return enemyTowerPositions[Mathf.Clamp(laneIndex, 0, enemyTowerPositions.Length - 1)];
+        }
+
+        public Vector3 GetBasePosition(int team)
+        {
+            return team == 0 ? playerBasePosition : enemyBasePosition;
         }
 
         public BattleUnit FindNearestEnemy(BattleUnit seeker)
@@ -792,6 +822,59 @@ namespace WarOfEras.Battle.Core
             enemyBaseHealth = enemyBaseMaxHealth;
             gameStarted = false;
             status = "\u5df2\u9009\u62e9" + selectedMap.DisplayName + "\uff0c\u96be\u5ea6\uff1a" + GameSession.DifficultyName + "\u3002\u70b9\u51fb\u5730\u56fe\u4efb\u610f\u4f4d\u7f6e\u5f00\u59cb\u3002";
+        }
+
+        private void InitializeBattleLayout()
+        {
+            battleLayout = FindFirstObjectByType<BattleLayout>();
+            if (battleLayout == null)
+            {
+                Debug.LogError("BattleLayout is missing. Battle.unity should contain a scene-authored Layout marker hierarchy.");
+                return;
+            }
+
+            if (!battleLayout.Validate(out var validationErrors))
+            {
+                Debug.LogError(validationErrors);
+                return;
+            }
+
+            laneRoutes = new[]
+            {
+                battleLayout.GetLaneRoute(0),
+                battleLayout.GetLaneRoute(1),
+                battleLayout.GetLaneRoute(2)
+            };
+            RebuildRouteGraphFromLayout();
+            playerTowerPositions = battleLayout.GetPlayerTowerPositions();
+            enemyTowerPositions = battleLayout.GetEnemyTowerPositions();
+            playerResourceWellPositions = battleLayout.GetPlayerResourceWellPositions();
+            enemyResourceWellPositions = battleLayout.GetEnemyResourceWellPositions();
+            playerBasePosition = battleLayout.PlayerBasePosition;
+            enemyBasePosition = battleLayout.EnemyBasePosition;
+            unitVisualScale = battleLayout.UnitVisualScale;
+            towerVisualScale = battleLayout.TowerVisualScale;
+            baseVisualScale = battleLayout.BaseVisualScale;
+            resourceWellVisualScale = battleLayout.ResourceWellVisualScale;
+        }
+
+        private void RebuildRouteGraphFromLayout()
+        {
+            if (laneRoutes.Length < 3 || laneRoutes[0].Length < 13 || laneRoutes[1].Length < 10 || laneRoutes[2].Length < 9)
+            {
+                routeNodes = RouteNodes;
+                routeEdges = RouteEdges;
+                return;
+            }
+
+            var nodes = new List<Vector3>(34);
+            nodes.AddRange(laneRoutes[0]);
+            nodes.AddRange(laneRoutes[1]);
+            nodes.AddRange(laneRoutes[2]);
+            nodes.Add(MapPoint(930f, 548f));
+            nodes.Add(MapPoint(958f, 635f));
+            routeNodes = nodes.ToArray();
+            routeEdges = RouteEdges;
         }
 
         private UnitDefinition[] BuildEnemyDefinitions(UnitDefinition[] baseDefinitions)
@@ -1228,29 +1311,29 @@ namespace WarOfEras.Battle.Core
         private void CreateBaseArt()
         {
             var baseSprite = LoadSprite("Barbarian/Base/Base", 100f, new Rect(250f, 80f, 1170f, 740f));
-            var playerBase = CreateSprite("Player Barbarian Base Art", baseSprite, new Vector3(PlayerBaseX + 1.25f, -0.16f, 0f), 3);
-            playerBase.transform.localScale = Vector3.one * BaseVisualScale;
+            var playerBase = CreateSprite("Player Barbarian Base Art", baseSprite, playerBasePosition, 3);
+            playerBase.transform.localScale = Vector3.one * baseVisualScale;
             playerBase.color = new Color(1f, 0.96f, 0.86f, 0.88f);
 
-            var enemyBase = CreateSprite("Enemy Barbarian Base Art", baseSprite, new Vector3(EnemyBaseX - 1.25f, -0.16f, 0f), 3);
+            var enemyBase = CreateSprite("Enemy Barbarian Base Art", baseSprite, enemyBasePosition, 3);
             enemyBase.flipX = true;
-            enemyBase.transform.localScale = Vector3.one * BaseVisualScale;
+            enemyBase.transform.localScale = Vector3.one * baseVisualScale;
             enemyBase.color = new Color(1f, 0.66f, 0.58f, 0.78f);
         }
 
         private void CreateResourceWellSiteMarkers()
         {
-            for (var i = 0; i < PlayerResourceWellPositions.Length; i++)
+            for (var i = 0; i < playerResourceWellPositions.Length; i++)
             {
-                var marker = CreateSprite("Player Resource Well Site " + (i + 1), ResourceWellSiteSprite, PlayerResourceWellPositions[i], 4);
+                var marker = CreateSprite("Player Resource Well Site " + (i + 1), ResourceWellSiteSprite, playerResourceWellPositions[i], 4);
                 marker.transform.SetParent(facilityMarkerRoot, true);
                 marker.transform.localScale = Vector3.one * 0.72f;
                 marker.color = new Color(0.42f, 1f, 0.82f, 0.78f);
             }
 
-            for (var i = 0; i < EnemyResourceWellPositions.Length; i++)
+            for (var i = 0; i < enemyResourceWellPositions.Length; i++)
             {
-                var marker = CreateSprite("Enemy Resource Well Site " + (i + 1), ResourceWellSiteSprite, EnemyResourceWellPositions[i], 4);
+                var marker = CreateSprite("Enemy Resource Well Site " + (i + 1), ResourceWellSiteSprite, enemyResourceWellPositions[i], 4);
                 marker.transform.SetParent(facilityMarkerRoot, true);
                 marker.transform.localScale = Vector3.one * 0.72f;
                 marker.color = new Color(1f, 0.48f, 0.34f, 0.72f);
@@ -1259,7 +1342,7 @@ namespace WarOfEras.Battle.Core
 
         private void CreateLaneMarker(int laneIndex)
         {
-            var marker = CreateSprite("Lane " + laneIndex + " Combat Guide", WhiteSprite, new Vector3(0f, LaneY[laneIndex], 0f), 5);
+            var marker = CreateSprite("Lane " + laneIndex + " Combat Guide", WhiteSprite, new Vector3(0f, GetLaneY(laneIndex), 0f), 5);
             marker.color = laneIndex == selectedLane
                 ? new Color(1f, 0.87f, 0.36f, 0.33f)
                 : new Color(0.08f, 0.08f, 0.06f, 0.2f);
@@ -1793,9 +1876,9 @@ namespace WarOfEras.Battle.Core
             return false;
         }
 
-        private static Vector3[] GetBuildPlacementPositions(BuildPlacementKind kind)
+        private Vector3[] GetBuildPlacementPositions(BuildPlacementKind kind)
         {
-            return kind == BuildPlacementKind.ResourceWell ? PlayerResourceWellPositions : PlayerTowerPositions;
+            return kind == BuildPlacementKind.ResourceWell ? playerResourceWellPositions : playerTowerPositions;
         }
 
         private int GetBuildPlacementCost(BuildPlacementKind kind)
@@ -2025,10 +2108,10 @@ namespace WarOfEras.Battle.Core
             var bestB = -1;
             var bestPoint = Vector3.zero;
 
-            for (var i = 0; i < RouteEdges.Length; i++)
+            for (var i = 0; i < routeEdges.Length; i++)
             {
-                var edge = RouteEdges[i];
-                var projected = ClosestPointOnSegment(worldPoint, RouteNodes[edge.A], RouteNodes[edge.B]);
+                var edge = routeEdges[i];
+                var projected = ClosestPointOnSegment(worldPoint, routeNodes[edge.A], routeNodes[edge.B]);
                 var distance = Vector2.Distance(worldPoint, projected);
                 if (distance < bestDistance)
                 {
@@ -2073,7 +2156,7 @@ namespace WarOfEras.Battle.Core
 
         private bool TryBuildShortestRoute(int startNode, RouteTarget target, out List<Vector3> points, out float totalCost)
         {
-            var targetNode = RouteNodes.Length;
+            var targetNode = routeNodes.Length;
             var nodeCount = targetNode + 1;
             var distance = new float[nodeCount];
             var previous = new int[nodeCount];
@@ -2129,7 +2212,7 @@ namespace WarOfEras.Battle.Core
             nodePath.Reverse();
             for (var i = 0; i < nodePath.Count; i++)
             {
-                points.Add(nodePath[i] == targetNode ? target.Position : RouteNodes[nodePath[i]]);
+                points.Add(nodePath[i] == targetNode ? target.Position : routeNodes[nodePath[i]]);
             }
 
             return points.Count >= 2;
@@ -2137,27 +2220,27 @@ namespace WarOfEras.Battle.Core
 
         private void RelaxRouteEdges(int current, RouteTarget target, int targetNode, float[] distance, int[] previous)
         {
-            for (var i = 0; i < RouteEdges.Length; i++)
+            for (var i = 0; i < routeEdges.Length; i++)
             {
-                var edge = RouteEdges[i];
+                var edge = routeEdges[i];
                 if (edge.A == current)
                 {
-                    RelaxEdge(edge.A, edge.B, Vector2.Distance(RouteNodes[edge.A], RouteNodes[edge.B]), distance, previous);
+                    RelaxEdge(edge.A, edge.B, Vector2.Distance(routeNodes[edge.A], routeNodes[edge.B]), distance, previous);
                 }
                 else if (edge.B == current)
                 {
-                    RelaxEdge(edge.B, edge.A, Vector2.Distance(RouteNodes[edge.A], RouteNodes[edge.B]), distance, previous);
+                    RelaxEdge(edge.B, edge.A, Vector2.Distance(routeNodes[edge.A], routeNodes[edge.B]), distance, previous);
                 }
             }
 
             if (current == target.EdgeA)
             {
-                RelaxEdge(current, targetNode, Vector2.Distance(RouteNodes[target.EdgeA], target.Position), distance, previous);
+                RelaxEdge(current, targetNode, Vector2.Distance(routeNodes[target.EdgeA], target.Position), distance, previous);
             }
 
             if (current == target.EdgeB)
             {
-                RelaxEdge(current, targetNode, Vector2.Distance(RouteNodes[target.EdgeB], target.Position), distance, previous);
+                RelaxEdge(current, targetNode, Vector2.Distance(routeNodes[target.EdgeB], target.Position), distance, previous);
             }
         }
 
@@ -2242,9 +2325,9 @@ namespace WarOfEras.Battle.Core
         {
             var lane = 0;
             var bestDistance = float.MaxValue;
-            for (var i = 0; i < LaneY.Length; i++)
+            for (var i = 0; i < laneRoutes.Length; i++)
             {
-                var distance = Mathf.Abs(position.y - LaneY[i]);
+                var distance = Mathf.Abs(position.y - GetLaneY(i));
                 if (distance < bestDistance)
                 {
                     bestDistance = distance;
@@ -2430,9 +2513,9 @@ namespace WarOfEras.Battle.Core
             incomePerSecond += ResourceWellIncomeBonus;
             GainEraValue(ResourceWellEraValue);
 
-            var well = CreateSprite("Player Resource Well " + (slotIndex + 1), ResourceWellBuiltSprite, PlayerResourceWellPositions[slotIndex], 8);
+            var well = CreateSprite("Player Resource Well " + (slotIndex + 1), ResourceWellBuiltSprite, playerResourceWellPositions[slotIndex], 8);
             well.transform.SetParent(facilityMarkerRoot, true);
-            well.transform.localScale = Vector3.one * ResourceWellVisualScale;
+            well.transform.localScale = Vector3.one * resourceWellVisualScale;
             well.color = Color.white;
             status = "\u5df2\u5efa\u6210\u8d44\u6e90\u4e95\uff0c\u91d1\u5e01\u4ea7\u51fa +" + ResourceWellIncomeBonus.ToString("0.#") + "/s\u3002";
         }
@@ -2504,9 +2587,9 @@ namespace WarOfEras.Battle.Core
             }
 
             enemyResourceWells[slotIndex] = true;
-            var well = CreateSprite("Enemy Resource Well " + (slotIndex + 1), ResourceWellBuiltSprite, EnemyResourceWellPositions[slotIndex], 8);
+            var well = CreateSprite("Enemy Resource Well " + (slotIndex + 1), ResourceWellBuiltSprite, enemyResourceWellPositions[slotIndex], 8);
             well.transform.SetParent(facilityMarkerRoot, true);
-            well.transform.localScale = Vector3.one * ResourceWellVisualScale;
+            well.transform.localScale = Vector3.one * resourceWellVisualScale;
             well.flipX = true;
             well.color = new Color(1f, 0.72f, 0.62f, 1f);
             status = "\u654c\u65b9\u5efa\u6210\u4e86\u8d44\u6e90\u4e95\u3002";
@@ -4046,7 +4129,7 @@ namespace WarOfEras.Battle.Core
             stopAtRouteEnd = stopWhenRouteEnds;
 
             transform.position = usesCustomRoute ? routePoints[0] : position;
-            transform.localScale = Vector3.one * definition.Scale * BattleGameController.UnitVisualScaleMultiplier;
+            transform.localScale = Vector3.one * definition.Scale * owner.UnitVisualScale;
 
             CreateGroundShadow();
 
@@ -4175,8 +4258,8 @@ namespace WarOfEras.Battle.Core
 
             attackImpulseTimer = AttackImpulseDuration;
             attackImpulseDirection = Team == 0 ? 1f : -1f;
-            var baseX = Team == 0 ? BattleGameController.EnemyBaseX : BattleGameController.PlayerBaseX;
-            controller.SpawnCombatHitEffect(new Vector3(baseX, transform.position.y, 0f), Team, Definition.AttackRange > 1.3f);
+            var basePosition = controller.GetBasePosition(Team == 0 ? 1 : 0);
+            controller.SpawnCombatHitEffect(new Vector3(basePosition.x, transform.position.y, 0f), Team, Definition.AttackRange > 1.3f);
             controller.DamageBase(Team == 0 ? 1 : 0, damage);
             attackTimer = Definition.AttackInterval * statusAttackIntervalMultiplier;
         }
@@ -4224,9 +4307,10 @@ namespace WarOfEras.Battle.Core
                 return Team == 0 ? routeTargetIndex >= routePoints.Length : routeTargetIndex < 0;
             }
 
+            var targetBase = controller.GetBasePosition(Team == 0 ? 1 : 0);
             return Team == 0
-                ? transform.position.x >= BattleGameController.EnemyBaseX - 0.55f
-                : transform.position.x <= BattleGameController.PlayerBaseX + 0.55f;
+                ? transform.position.x >= targetBase.x - 0.55f
+                : transform.position.x <= targetBase.x + 0.55f;
         }
 
         private void UpdateAnimation()
@@ -4369,7 +4453,7 @@ namespace WarOfEras.Battle.Core
             definition = towerDefinition;
             frames = towerFrames;
 
-            transform.localScale = Vector3.one * BattleGameController.TowerVisualScale;
+            transform.localScale = Vector3.one * owner.TowerVisualScale;
             CreateGroundShadow();
 
             spriteRenderer = gameObject.AddComponent<SpriteRenderer>();

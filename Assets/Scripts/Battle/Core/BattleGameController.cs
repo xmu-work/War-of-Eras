@@ -11,10 +11,10 @@ using UnityEngine.UI;
 
 namespace WarOfEras.Battle.Core
 {
-    public sealed class BattleGameController : MonoBehaviour
+    public sealed partial class BattleGameController : MonoBehaviour
     {
-        public const float PlayerBaseX = -15.05f;
-        public const float EnemyBaseX = 15.05f;
+        public const float PlayerBaseX = -18.363636f;
+        public const float EnemyBaseX = 18.363636f;
 
         private const string MainMenuSceneName = "MainMenu";
         private const string BattleSceneName = "Battle";
@@ -27,19 +27,19 @@ namespace WarOfEras.Battle.Core
         private const float EraAmbienceFadeDuration = 1.35f;
         private const float MobilizationCostMultiplier = 0.8f;
         private const float MobilizationSpeedMultiplier = 1.15f;
-        private const float MapTextureWidth = 1672f;
-        private const float MapTextureHeight = 941f;
+        private const float MapTextureWidth = 2400f;
+        private const float MapTextureHeight = 1350f;
         private const float MapPixelsPerUnit = 55f;
         private const float CameraOrthographicSize = 5f;
         private const float CameraMinOrthographicSize = 3.4f;
-        private const float CameraMaxOrthographicSize = 7.2f;
+        private const float CameraMaxOrthographicSize = 9f;
         private const float CameraZoomStep = 0.55f;
         private const float CameraEdgeScrollMargin = 36f;
         private const float CameraEdgeScrollSpeed = 20f;
-        private const float DefaultUnitVisualScale = 0.82f;
-        private const float DefaultTowerVisualScale = 0.16f / 3f;
-        private const float DefaultBaseVisualScale = 0.16f;
-        private const float DefaultResourceWellVisualScale = 0.72f / 3f;
+        private const float DefaultUnitVisualScale = 0.72f;
+        private const float DefaultTowerVisualScale = 0.22f;
+        private const float DefaultBaseVisualScale = 0.28f;
+        private const float DefaultResourceWellVisualScale = 0.22f;
         private const int ResourceWellCost = 120;
         private const float ResourceWellIncomeBonus = 2.5f;
         private const float ResourceWellEraValue = 65f;
@@ -99,43 +99,68 @@ namespace WarOfEras.Battle.Core
         {
             new AgeVisualSet(
                 "Barbarian",
-                "Barbarian/Maps/ForestThreeLanes",
+                "Battle/Maps/PixelFrontline_Barbarian",
                 "Barbarian/Base/Base",
                 "Barbarian/Units",
-                new[] { "Hunter", "Thrower", "Champion" },
-                "Barbarian/Towers/BoneTower/attack_",
+                new[] { "Hunter", "Thrower", "BoneArcher", "TuskRider", "Champion" },
+                new[]
+                {
+                    "Barbarian/Towers/BoneTower/attack_",
+                    "Barbarian/Towers/SlingNest/attack_",
+                    "Barbarian/Towers/MammothTotem/attack_"
+                },
                 new Color(1f, 0.94f, 0.78f, 1f)),
             new AgeVisualSet(
                 "Machine",
-                "Machine/Maps/ForestThreeLanes",
+                "Battle/Maps/PixelFrontline_Machine",
                 "Machine/Base/Base",
                 "Machine/Units",
-                new[] { "GearSoldier", "SteamCrossbow", "SiegeRoller" },
-                "Machine/Towers/GearTower/attack_",
+                new[] { "GearSoldier", "SteamCrossbow", "BoilerGrenadier", "SiegeRoller", "ClockworkGuard" },
+                new[]
+                {
+                    "Machine/Towers/GearTower/attack_",
+                    "Machine/Towers/SteamCannonTower/attack_",
+                    "Machine/Towers/RivetMortar/attack_"
+                },
                 new Color(0.88f, 0.86f, 0.78f, 1f)),
             new AgeVisualSet(
                 "Electric",
-                "Electric/Maps/ForestThreeLanes",
+                "Battle/Maps/PixelFrontline_Electric",
                 "Electric/Base/Base",
                 "Electric/Units",
-                new[] { "VoltGuard", "CoilShooter", "CrawlerTank" },
-                "Electric/Towers/TeslaTower/attack_",
+                new[] { "VoltGuard", "ArcRunner", "CoilShooter", "CrawlerTank", "ThunderMech" },
+                new[]
+                {
+                    "Electric/Towers/TeslaTower/attack_",
+                    "Electric/Towers/ArcPylon/attack_",
+                    "Electric/Towers/RailgunTower/attack_"
+                },
                 new Color(0.66f, 0.88f, 1f, 1f)),
             new AgeVisualSet(
                 "Nuclear",
-                "Nuclear/Maps/ForestThreeLanes",
+                "Battle/Maps/PixelFrontline_Nuclear",
                 "Nuclear/Base/Base",
                 "Nuclear/Units",
-                new[] { "RadTrooper", "FissionLancer", "NuclearTank" },
-                "Nuclear/Towers/ParticleGunTower/attack_",
+                new[] { "RadTrooper", "IsotopeScout", "FissionLancer", "ReactorWalker", "NuclearTank" },
+                new[]
+                {
+                    "Nuclear/Towers/ParticleGunTower/attack_",
+                    "Nuclear/Towers/ReactorMortar/attack_",
+                    "Nuclear/Towers/FalloutObelisk/attack_"
+                },
                 new Color(0.76f, 1f, 0.64f, 1f)),
             new AgeVisualSet(
                 "Starsea",
-                "Starsea/Maps/ForestThreeLanes",
+                "Battle/Maps/PixelFrontline_Starsea",
                 "Starsea/Base/Base",
                 "Starsea/Units",
-                new[] { "LaserTrooper", "SkimmerMech", "AntimatterColossus" },
-                "Starsea/Towers/TitaniumRayTower/attack_",
+                new[] { "LaserTrooper", "PhotonBlade", "SkimmerMech", "GravityDrone", "AntimatterColossus" },
+                new[]
+                {
+                    "Starsea/Towers/TitaniumRayTower/attack_",
+                    "Starsea/Towers/PlasmaSpire/attack_",
+                    "Starsea/Towers/SingularityBeacon/attack_"
+                },
                 new Color(0.86f, 0.72f, 1f, 1f))
         };
 
@@ -167,83 +192,81 @@ namespace WarOfEras.Battle.Core
         {
             new[]
             {
-                MapPoint(468f, 196f),
-                MapPoint(555f, 198f),
-                MapPoint(672f, 207f),
-                MapPoint(790f, 214f),
-                MapPoint(878f, 232f),
-                MapPoint(916f, 278f),
-                MapPoint(1006f, 218f),
-                MapPoint(1122f, 174f),
-                MapPoint(1242f, 162f),
-                MapPoint(1370f, 174f),
-                MapPoint(1484f, 201f),
-                MapPoint(1580f, 211f),
-                MapPoint(1664f, 214f)
+                MapPoint(190f, 675f),
+                MapPoint(305f, 560f),
+                MapPoint(430f, 440f),
+                MapPoint(690f, 390f),
+                MapPoint(1015f, 390f),
+                MapPoint(1230f, 390f),
+                MapPoint(1485f, 410f),
+                MapPoint(1780f, 395f),
+                MapPoint(2070f, 465f),
+                MapPoint(2210f, 675f)
             },
             new[]
             {
-                MapPoint(156f, 490f),
-                MapPoint(270f, 460f),
-                MapPoint(430f, 459f),
-                MapPoint(548f, 464f),
-                MapPoint(648f, 464f),
-                MapPoint(760f, 464f),
-                MapPoint(865f, 466f),
-                MapPoint(1010f, 456f),
-                MapPoint(1224f, 454f),
-                MapPoint(1488f, 452f)
+                MapPoint(190f, 675f),
+                MapPoint(430f, 675f),
+                MapPoint(700f, 675f),
+                MapPoint(975f, 675f),
+                MapPoint(1200f, 675f),
+                MapPoint(1425f, 675f),
+                MapPoint(1700f, 675f),
+                MapPoint(1970f, 675f),
+                MapPoint(2210f, 675f)
             },
             new[]
             {
-                MapPoint(490f, 724f),
-                MapPoint(610f, 716f),
-                MapPoint(822f, 716f),
-                MapPoint(935f, 710f),
-                MapPoint(1218f, 721f),
-                MapPoint(1360f, 704f),
-                MapPoint(1482f, 660f),
-                MapPoint(1560f, 645f),
-                MapPoint(1664f, 636f)
+                MapPoint(190f, 675f),
+                MapPoint(305f, 790f),
+                MapPoint(455f, 930f),
+                MapPoint(725f, 965f),
+                MapPoint(1045f, 950f),
+                MapPoint(1230f, 960f),
+                MapPoint(1510f, 940f),
+                MapPoint(1810f, 960f),
+                MapPoint(2070f, 875f),
+                MapPoint(2210f, 675f)
             }
         };
 
         private static readonly Vector3[] RouteNodes =
         {
-            MapPoint(468f, 196f),
-            MapPoint(555f, 198f),
-            MapPoint(672f, 207f),
-            MapPoint(790f, 214f),
-            MapPoint(878f, 232f),
-            MapPoint(916f, 278f),
-            MapPoint(1006f, 218f),
-            MapPoint(1122f, 174f),
-            MapPoint(1242f, 162f),
-            MapPoint(1370f, 174f),
-            MapPoint(1484f, 201f),
-            MapPoint(1580f, 211f),
-            MapPoint(1664f, 214f),
-            MapPoint(156f, 490f),
-            MapPoint(270f, 460f),
-            MapPoint(430f, 459f),
-            MapPoint(548f, 464f),
-            MapPoint(648f, 464f),
-            MapPoint(760f, 464f),
-            MapPoint(865f, 466f),
-            MapPoint(1010f, 456f),
-            MapPoint(1224f, 454f),
-            MapPoint(1488f, 452f),
-            MapPoint(490f, 724f),
-            MapPoint(610f, 716f),
-            MapPoint(822f, 716f),
-            MapPoint(935f, 710f),
-            MapPoint(1218f, 721f),
-            MapPoint(1360f, 704f),
-            MapPoint(1482f, 660f),
-            MapPoint(1560f, 645f),
-            MapPoint(1664f, 636f),
-            MapPoint(930f, 548f),
-            MapPoint(958f, 635f)
+            MapPoint(190f, 675f),
+            MapPoint(305f, 560f),
+            MapPoint(430f, 440f),
+            MapPoint(690f, 390f),
+            MapPoint(1015f, 390f),
+            MapPoint(1230f, 390f),
+            MapPoint(1485f, 410f),
+            MapPoint(1780f, 395f),
+            MapPoint(2070f, 465f),
+            MapPoint(2210f, 675f),
+            MapPoint(190f, 675f),
+            MapPoint(430f, 675f),
+            MapPoint(700f, 675f),
+            MapPoint(975f, 675f),
+            MapPoint(1200f, 675f),
+            MapPoint(1425f, 675f),
+            MapPoint(1700f, 675f),
+            MapPoint(1970f, 675f),
+            MapPoint(2210f, 675f),
+            MapPoint(190f, 675f),
+            MapPoint(305f, 790f),
+            MapPoint(455f, 930f),
+            MapPoint(725f, 965f),
+            MapPoint(1045f, 950f),
+            MapPoint(1230f, 960f),
+            MapPoint(1510f, 940f),
+            MapPoint(1810f, 960f),
+            MapPoint(2070f, 875f),
+            MapPoint(2210f, 675f),
+            MapPoint(735f, 530f),
+            MapPoint(735f, 815f),
+            MapPoint(1200f, 525f),
+            MapPoint(1200f, 825f),
+            MapPoint(1660f, 535f),
+            MapPoint(1660f, 815f)
         };
 
         private static readonly RouteEdge[] RouteEdges =
@@ -257,33 +280,42 @@ namespace WarOfEras.Battle.Core
             new RouteEdge(6, 7),
             new RouteEdge(7, 8),
             new RouteEdge(8, 9),
-            new RouteEdge(9, 10),
             new RouteEdge(10, 11),
             new RouteEdge(11, 12),
+            new RouteEdge(12, 13),
             new RouteEdge(13, 14),
             new RouteEdge(14, 15),
             new RouteEdge(15, 16),
             new RouteEdge(16, 17),
             new RouteEdge(17, 18),
-            new RouteEdge(18, 19),
             new RouteEdge(19, 20),
             new RouteEdge(20, 21),
             new RouteEdge(21, 22),
+            new RouteEdge(22, 23),
             new RouteEdge(23, 24),
             new RouteEdge(24, 25),
             new RouteEdge(25, 26),
             new RouteEdge(26, 27),
             new RouteEdge(27, 28),
-            new RouteEdge(28, 29),
-            new RouteEdge(29, 30),
-            new RouteEdge(30, 31),
-            new RouteEdge(5, 19),
-            new RouteEdge(19, 32),
-            new RouteEdge(32, 33),
-            new RouteEdge(33, 26)
+            new RouteEdge(0, 10),
+            new RouteEdge(10, 19),
+            new RouteEdge(9, 18),
+            new RouteEdge(18, 28),
+            new RouteEdge(3, 29),
+            new RouteEdge(29, 12),
+            new RouteEdge(12, 30),
+            new RouteEdge(30, 22),
+            new RouteEdge(5, 31),
+            new RouteEdge(31, 14),
+            new RouteEdge(14, 32),
+            new RouteEdge(32, 24),
+            new RouteEdge(7, 33),
+            new RouteEdge(33, 16),
+            new RouteEdge(16, 34),
+            new RouteEdge(34, 26)
         };
 
-        private static readonly int[] PlayerRouteStartNodes = { 13 };
+        private static readonly int[] PlayerRouteStartNodes = { 0, 10, 19 };
 
         private static readonly Color[] RoutePreviewColors =
         {
@@ -294,28 +326,28 @@ namespace WarOfEras.Battle.Core
 
         private static readonly Vector3[] PlayerTowerPositions =
         {
-            new Vector3(-9.45f, 3.9f, 0f),
-            new Vector3(-9.35f, 0.95f, 0f),
-            new Vector3(-8.15f, -2.7f, 0f)
+            MapPoint(445f, 430f),
+            MapPoint(405f, 675f),
+            MapPoint(445f, 920f)
         };
 
         private static readonly Vector3[] EnemyTowerPositions =
         {
-            new Vector3(9.45f, 3.9f, 0f),
-            new Vector3(9.35f, 0.95f, 0f),
-            new Vector3(8.15f, -2.7f, 0f)
+            MapPoint(1955f, 430f),
+            MapPoint(1995f, 675f),
+            MapPoint(1955f, 920f)
         };
 
         private static readonly Vector3[] PlayerResourceWellPositions =
         {
-            MapPoint(330f, 528f),
-            MapPoint(662f, 790f)
+            MapPoint(830f, 545f),
+            MapPoint(830f, 805f)
         };
 
         private static readonly Vector3[] EnemyResourceWellPositions =
         {
-            MapPoint(1342f, 528f),
-            MapPoint(1010f, 790f)
+            MapPoint(1570f, 545f),
+            MapPoint(1570f, 805f)
         };
 
         private static Sprite whiteSprite;
@@ -329,6 +361,7 @@ namespace WarOfEras.Battle.Core
         private readonly List<BattleUnit> units = new List<BattleUnit>();
         private readonly List<Button> laneButtons = new List<Button>();
         private readonly List<UnitButtonBinding> unitButtons = new List<UnitButtonBinding>();
+        private readonly List<TowerButtonBinding> towerButtons = new List<TowerButtonBinding>();
         private readonly List<RouteCandidate> pendingRouteCandidates = new List<RouteCandidate>();
         private readonly List<RoutePreview> routePreviews = new List<RoutePreview>();
         private readonly List<BuildPlacementPreview> buildPlacementPreviews = new List<BuildPlacementPreview>();
@@ -348,7 +381,9 @@ namespace WarOfEras.Battle.Core
 
         private UnitDefinition[] playerUnitDefinitions;
         private UnitDefinition[] enemyUnitDefinitions;
+        private TowerDefinition[] currentTowerDefinitions;
         private TowerDefinition currentTowerDefinition;
+        private Sprite[][] towerFrameSets;
         private Sprite[] towerFrames;
         private Font uiFont;
         private Camera gameplayCamera;
@@ -378,7 +413,6 @@ namespace WarOfEras.Battle.Core
         private AudioSource eraAmbienceSource;
         private AudioSource fadingEraAmbienceSource;
         private RouteCandidate activeRouteCandidate;
-        private Button towerButton;
         private Button resourceWellButton;
         private Button agePowerButton;
         private Button shieldButton;
@@ -399,8 +433,8 @@ namespace WarOfEras.Battle.Core
         private Vector3[] enemyTowerPositions = EnemyTowerPositions;
         private Vector3[] playerResourceWellPositions = PlayerResourceWellPositions;
         private Vector3[] enemyResourceWellPositions = EnemyResourceWellPositions;
-        private Vector3 playerBasePosition = new Vector3(PlayerBaseX + 1.25f, -0.16f, 0f);
-        private Vector3 enemyBasePosition = new Vector3(EnemyBaseX - 1.25f, -0.16f, 0f);
+        private Vector3 playerBasePosition = MapPoint(190f, 675f);
+        private Vector3 enemyBasePosition = MapPoint(2210f, 675f);
         private float unitVisualScale = DefaultUnitVisualScale;
         private float towerVisualScale = DefaultTowerVisualScale;
         private float baseVisualScale = DefaultBaseVisualScale;
@@ -429,6 +463,7 @@ namespace WarOfEras.Battle.Core
         private float elapsedTime;
         private float ambienceFadeElapsed;
         private int ageIndex;
+        private int selectedTowerIndex;
         private int currentAmbienceAgeIndex = -1;
         private int selectedLane = 1;
         private bool gameStarted;
@@ -760,8 +795,11 @@ namespace WarOfEras.Battle.Core
         {
             playerUnitDefinitions = BuildUnitDefinitionsForAge(ageIndex);
             enemyUnitDefinitions = BuildEnemyDefinitions(playerUnitDefinitions);
-            currentTowerDefinition = BuildTowerDefinitionForAge(ageIndex);
-            towerFrames = LoadFrames(GetAgeVisualSet(ageIndex).TowerFramePrefix, 5, 100f, AgeVisualSets[0].TowerFramePrefix);
+            currentTowerDefinitions = BuildTowerDefinitionsForAge(ageIndex);
+            towerFrameSets = BuildTowerFrameSets(ageIndex, currentTowerDefinitions.Length);
+            selectedTowerIndex = Mathf.Clamp(selectedTowerIndex, 0, Mathf.Max(0, currentTowerDefinitions.Length - 1));
+            currentTowerDefinition = GetTowerDefinition(selectedTowerIndex);
+            towerFrames = GetTowerFrames(selectedTowerIndex);
         }
 
         private static AgeVisualSet GetAgeVisualSet(int index)
@@ -777,37 +815,47 @@ namespace WarOfEras.Battle.Core
                 case 1:
                     return new[]
                     {
-                        CreateUnitDefinition("\u9f7f\u8f6e\u5175", "GearSoldier", 50, 115f, 30f, 1.05f, 0.58f, 0.95f, 0.35f, 0, tint),
-                        CreateUnitDefinition("\u84b8\u6c7d\u5f29\u624b", "SteamCrossbow", 75, 90f, 14f, 0.95f, 2.75f, 0.8f, 0.34f, 1, tint),
-                        CreateUnitDefinition("\u94c1\u8f6e\u7834\u57ce\u8f66", "SiegeRoller", 500, 340f, 78f, 0.72f, 1.1f, 1.45f, 0.44f, 2, tint)
+                        CreateUnitDefinition("齿轮兵", "GearSoldier", 50, 115f, 30f, 1.05f, 0.58f, 0.95f, 0.35f, 0, tint),
+                        CreateUnitDefinition("蒸汽弩手", "SteamCrossbow", 75, 90f, 14f, 0.95f, 2.75f, 0.8f, 0.34f, 1, tint),
+                        CreateUnitDefinition("锅炉掷弹兵", "BoilerGrenadier", 110, 125f, 38f, 0.88f, 2.45f, 1.15f, 0.36f, 2, tint),
+                        CreateUnitDefinition("铁轮破城车", "SiegeRoller", 350, 320f, 72f, 0.72f, 1.1f, 1.45f, 0.44f, 3, tint),
+                        CreateUnitDefinition("发条卫士", "ClockworkGuard", 520, 430f, 86f, 0.82f, 0.72f, 1.05f, 0.44f, 4, tint)
                     };
                 case 2:
                     return new[]
                     {
-                        CreateUnitDefinition("\u7535\u51fb\u5175", "VoltGuard", 200, 230f, 82f, 1.12f, 0.6f, 0.95f, 0.36f, 0, tint),
-                        CreateUnitDefinition("\u7ebf\u5708\u5c04\u624b", "CoilShooter", 400, 180f, 32f, 1f, 3.0f, 0.62f, 0.35f, 1, tint),
-                        CreateUnitDefinition("\u5c65\u5e26\u6218\u8f66", "CrawlerTank", 1000, 720f, 150f, 0.65f, 1.55f, 1.5f, 0.46f, 2, tint)
+                        CreateUnitDefinition("电击兵", "VoltGuard", 180, 230f, 82f, 1.12f, 0.6f, 0.95f, 0.36f, 0, tint),
+                        CreateUnitDefinition("电弧疾行者", "ArcRunner", 230, 180f, 70f, 1.55f, 0.56f, 0.82f, 0.34f, 1, tint),
+                        CreateUnitDefinition("线圈射手", "CoilShooter", 380, 180f, 32f, 1f, 3.0f, 0.62f, 0.35f, 2, tint),
+                        CreateUnitDefinition("履带战车", "CrawlerTank", 820, 720f, 150f, 0.65f, 1.55f, 1.5f, 0.46f, 3, tint),
+                        CreateUnitDefinition("雷霆机甲", "ThunderMech", 1150, 620f, 178f, 0.78f, 2.2f, 1.25f, 0.48f, 4, tint)
                     };
                 case 3:
                     return new[]
                     {
-                        CreateUnitDefinition("\u8f90\u5c04\u6b65\u5175", "RadTrooper", 1500, 420f, 120f, 1.2f, 0.62f, 0.82f, 0.36f, 0, tint),
-                        CreateUnitDefinition("\u88c2\u53d8\u67aa\u5175", "FissionLancer", 2000, 360f, 46f, 1.05f, 3.08f, 0.46f, 0.35f, 1, tint),
-                        CreateUnitDefinition("\u6838\u80fd\u5766\u514b", "NuclearTank", 7000, 1500f, 320f, 0.6f, 1.8f, 1.64f, 0.48f, 2, tint)
+                        CreateUnitDefinition("辐射步兵", "RadTrooper", 1300, 420f, 120f, 1.2f, 0.62f, 0.82f, 0.36f, 0, tint),
+                        CreateUnitDefinition("同位素侦察兵", "IsotopeScout", 1600, 360f, 108f, 1.48f, 0.6f, 0.76f, 0.34f, 1, tint),
+                        CreateUnitDefinition("裂变枪兵", "FissionLancer", 2200, 360f, 46f, 1.05f, 3.08f, 0.46f, 0.35f, 2, tint),
+                        CreateUnitDefinition("反应堆行者", "ReactorWalker", 4200, 820f, 210f, 0.82f, 2.1f, 1.18f, 0.45f, 3, tint),
+                        CreateUnitDefinition("核能坦克", "NuclearTank", 7000, 1500f, 320f, 0.6f, 1.8f, 1.64f, 0.48f, 4, tint)
                     };
                 case 4:
                     return new[]
                     {
-                        CreateUnitDefinition("\u6fc0\u5149\u5175", "LaserTrooper", 5000, 1000f, 260f, 1.3f, 0.75f, 0.8f, 0.37f, 0, tint),
-                        CreateUnitDefinition("\u6d6e\u6e38\u673a\u7532", "SkimmerMech", 6000, 820f, 95f, 1.15f, 3.25f, 0.38f, 0.36f, 1, tint),
-                        CreateUnitDefinition("\u53cd\u7269\u8d28\u5de8\u50cf", "AntimatterColossus", 20000, 3200f, 720f, 0.5f, 2.1f, 1.8f, 0.5f, 2, tint)
+                        CreateUnitDefinition("激光兵", "LaserTrooper", 4800, 1000f, 260f, 1.3f, 0.75f, 0.8f, 0.37f, 0, tint),
+                        CreateUnitDefinition("光子刀锋", "PhotonBlade", 5600, 820f, 240f, 1.58f, 0.6f, 0.72f, 0.35f, 1, tint),
+                        CreateUnitDefinition("浮游机甲", "SkimmerMech", 6800, 820f, 95f, 1.15f, 3.25f, 0.38f, 0.36f, 2, tint),
+                        CreateUnitDefinition("重力无人机", "GravityDrone", 11000, 1450f, 420f, 0.9f, 2.35f, 1.08f, 0.47f, 3, tint),
+                        CreateUnitDefinition("反物质巨像", "AntimatterColossus", 20000, 3200f, 720f, 0.5f, 2.1f, 1.8f, 0.5f, 4, tint)
                     };
                 default:
                     return new[]
                     {
-                        CreateUnitDefinition("\u77f3\u68d2\u6218\u58eb", "Hunter", 15, 60f, 16f, 1f, 0.55f, 1f, 0.34f, 0, tint),
-                        CreateUnitDefinition("\u6295\u77f3\u730e\u624b", "Thrower", 25, 48f, 9f, 0.9f, 2.35f, 0.95f, 0.33f, 1, tint),
-                        CreateUnitDefinition("\u5de8\u9aa8\u52c7\u58eb", "Champion", 100, 180f, 42f, 0.7f, 0.95f, 1.35f, 0.42f, 2, tint)
+                        CreateUnitDefinition("石棒战士", "Hunter", 15, 60f, 16f, 1f, 0.55f, 1f, 0.34f, 0, tint),
+                        CreateUnitDefinition("投石猎手", "Thrower", 22, 48f, 9f, 0.9f, 2.35f, 0.95f, 0.33f, 1, tint),
+                        CreateUnitDefinition("骨弓猎手", "BoneArcher", 35, 46f, 12f, 0.95f, 3.05f, 0.82f, 0.34f, 2, tint),
+                        CreateUnitDefinition("獠牙骑手", "TuskRider", 65, 120f, 24f, 1.35f, 0.72f, 0.92f, 0.38f, 3, tint),
+                        CreateUnitDefinition("巨骨勇士", "Champion", 110, 180f, 42f, 0.7f, 0.95f, 1.35f, 0.42f, 4, tint)
                     };
             }
         }
@@ -846,22 +894,85 @@ namespace WarOfEras.Battle.Core
                 tint);
         }
 
-        private TowerDefinition BuildTowerDefinitionForAge(int index)
+        private TowerDefinition[] BuildTowerDefinitionsForAge(int index)
         {
             var tint = AgeTints[Mathf.Clamp(index, 0, AgeTints.Length - 1)];
             switch (Mathf.Clamp(index, 0, AgeNames.Length - 1))
             {
                 case 1:
-                    return new TowerDefinition("\u9f7f\u8f6e\u629b\u70ae\u5854", 500, 40f, 1.75f, 4f, tint);
+                    return new[]
+                    {
+                        new TowerDefinition("齿轮抛炮塔", 460, 40f, 1.75f, 4f, tint),
+                        new TowerDefinition("蒸汽加农塔", 650, 68f, 1.45f, 4.4f, tint),
+                        new TowerDefinition("铆钉迫击塔", 900, 140f, 2.6f, 5f, tint)
+                    };
                 case 2:
-                    return new TowerDefinition("\u7279\u65af\u62c9\u5854", 1500, 34f, 1.75f, 5f, tint);
+                    return new[]
+                    {
+                        new TowerDefinition("特斯拉塔", 1350, 34f, 1.75f, 5f, tint),
+                        new TowerDefinition("电弧塔", 1800, 48f, 1.2f, 4.2f, tint),
+                        new TowerDefinition("轨道炮塔", 2600, 210f, 2.85f, 5.4f, tint)
+                    };
                 case 3:
-                    return new TowerDefinition("\u7c92\u5b50\u673a\u67aa\u5854", 7000, 70f, 1f, 5f, tint);
+                    return new[]
+                    {
+                        new TowerDefinition("粒子机枪塔", 6200, 70f, 1f, 5f, tint),
+                        new TowerDefinition("反应堆迫击塔", 7600, 145f, 1.9f, 5.5f, tint),
+                        new TowerDefinition("辐尘尖塔", 10500, 270f, 2.7f, 5.8f, tint)
+                    };
                 case 4:
-                    return new TowerDefinition("\u949b\u6676\u5c04\u7ebf\u5854", 24000, 100f, 1f, 4f, tint);
+                    return new[]
+                    {
+                        new TowerDefinition("钛晶射线塔", 22000, 100f, 1f, 4f, tint),
+                        new TowerDefinition("等离子尖塔", 26000, 160f, 0.78f, 4.6f, tint),
+                        new TowerDefinition("奇点信标", 34000, 520f, 3.0f, 6f, tint)
+                    };
                 default:
-                    return new TowerDefinition("\u9aa8\u77f3\u5854", 100, 12f, 0.75f, 3.5f, tint);
+                    return new[]
+                    {
+                        new TowerDefinition("骨石塔", 90, 12f, 0.75f, 3.5f, tint),
+                        new TowerDefinition("投石巢", 140, 24f, 1.15f, 4.25f, tint),
+                        new TowerDefinition("猛犸图腾", 230, 58f, 2.35f, 4.75f, tint)
+                    };
             }
+        }
+
+        private Sprite[][] BuildTowerFrameSets(int index, int towerCount)
+        {
+            var visualSet = GetAgeVisualSet(index);
+            var frames = new Sprite[Mathf.Max(0, towerCount)][];
+            for (var i = 0; i < frames.Length; i++)
+            {
+                var visualIndex = Mathf.Clamp(i, 0, visualSet.TowerFramePrefixes.Length - 1);
+                var fallbackIndex = Mathf.Clamp(i, 0, AgeVisualSets[0].TowerFramePrefixes.Length - 1);
+                frames[i] = LoadFrames(
+                    visualSet.TowerFramePrefixes[visualIndex],
+                    5,
+                    100f,
+                    AgeVisualSets[0].TowerFramePrefixes[fallbackIndex]);
+            }
+
+            return frames;
+        }
+
+        private TowerDefinition GetTowerDefinition(int towerIndex)
+        {
+            if (currentTowerDefinitions == null || currentTowerDefinitions.Length == 0)
+            {
+                return null;
+            }
+
+            return currentTowerDefinitions[Mathf.Clamp(towerIndex, 0, currentTowerDefinitions.Length - 1)];
+        }
+
+        private Sprite[] GetTowerFrames(int towerIndex)
+        {
+            if (towerFrameSets == null || towerFrameSets.Length == 0)
+            {
+                return new Sprite[0];
+            }
+
+            return towerFrameSets[Mathf.Clamp(towerIndex, 0, towerFrameSets.Length - 1)];
         }
 
         private void ApplyGameSetup()
@@ -931,22 +1042,22 @@ namespace WarOfEras.Battle.Core
             }
 
             var basesRoot = EnsureMarker(root, "Layout/Bases");
-            EnsureMarker(basesRoot, "PlayerBasePoint").position = MapPoint(156f, 464f);
-            EnsureMarker(basesRoot, "EnemyBasePoint").position = MapPoint(1488f, 464f);
+            EnsureMarker(basesRoot, "PlayerBasePoint").position = MapPoint(190f, 675f);
+            EnsureMarker(basesRoot, "EnemyBasePoint").position = MapPoint(2210f, 675f);
 
             var towersRoot = EnsureMarker(root, "Layout/Towers");
-            EnsureMarker(towersRoot, "PlayerTowerSlot_0").position = new Vector3(-9.45f, 3.9f, 0f);
-            EnsureMarker(towersRoot, "PlayerTowerSlot_1").position = new Vector3(-9.35f, 0.95f, 0f);
-            EnsureMarker(towersRoot, "PlayerTowerSlot_2").position = new Vector3(-8.15f, -2.7f, 0f);
-            EnsureMarker(towersRoot, "EnemyTowerSlot_0").position = new Vector3(9.45f, 3.9f, 0f);
-            EnsureMarker(towersRoot, "EnemyTowerSlot_1").position = new Vector3(9.35f, 0.95f, 0f);
-            EnsureMarker(towersRoot, "EnemyTowerSlot_2").position = new Vector3(8.15f, -2.7f, 0f);
+            EnsureMarker(towersRoot, "PlayerTowerSlot_0").position = MapPoint(445f, 430f);
+            EnsureMarker(towersRoot, "PlayerTowerSlot_1").position = MapPoint(405f, 675f);
+            EnsureMarker(towersRoot, "PlayerTowerSlot_2").position = MapPoint(445f, 920f);
+            EnsureMarker(towersRoot, "EnemyTowerSlot_0").position = MapPoint(1955f, 430f);
+            EnsureMarker(towersRoot, "EnemyTowerSlot_1").position = MapPoint(1995f, 675f);
+            EnsureMarker(towersRoot, "EnemyTowerSlot_2").position = MapPoint(1955f, 920f);
 
             var wellsRoot = EnsureMarker(root, "Layout/ResourceWells");
-            EnsureMarker(wellsRoot, "PlayerWellSlot_0").position = MapPoint(488f, 578f);
-            EnsureMarker(wellsRoot, "PlayerWellSlot_1").position = MapPoint(820f, 840f);
-            EnsureMarker(wellsRoot, "EnemyWellSlot_0").position = MapPoint(1500f, 578f);
-            EnsureMarker(wellsRoot, "EnemyWellSlot_1").position = MapPoint(1152f, 840f);
+            EnsureMarker(wellsRoot, "PlayerWellSlot_0").position = MapPoint(830f, 545f);
+            EnsureMarker(wellsRoot, "PlayerWellSlot_1").position = MapPoint(830f, 805f);
+            EnsureMarker(wellsRoot, "EnemyWellSlot_0").position = MapPoint(1570f, 545f);
+            EnsureMarker(wellsRoot, "EnemyWellSlot_1").position = MapPoint(1570f, 805f);
         }
 
         private static Transform EnsureMarker(Transform root, string path)
@@ -991,19 +1102,23 @@ namespace WarOfEras.Battle.Core
 
         private void RebuildRouteGraphFromLayout()
         {
-            if (laneRoutes.Length < 3 || laneRoutes[0].Length < 13 || laneRoutes[1].Length < 10 || laneRoutes[2].Length < 9)
+            if (laneRoutes.Length < 3 || laneRoutes[0].Length < 10 || laneRoutes[1].Length < 9 || laneRoutes[2].Length < 10)
             {
                 routeNodes = RouteNodes;
                 routeEdges = RouteEdges;
                 return;
             }
 
-            var nodes = new List<Vector3>(34);
+            var nodes = new List<Vector3>(35);
             nodes.AddRange(laneRoutes[0]);
             nodes.AddRange(laneRoutes[1]);
             nodes.AddRange(laneRoutes[2]);
-            nodes.Add(MapPoint(930f, 548f));
-            nodes.Add(MapPoint(958f, 635f));
+            nodes.Add(MapPoint(735f, 530f));
+            nodes.Add(MapPoint(735f, 815f));
+            nodes.Add(MapPoint(1200f, 525f));
+            nodes.Add(MapPoint(1200f, 825f));
+            nodes.Add(MapPoint(1660f, 535f));
+            nodes.Add(MapPoint(1660f, 815f));
             routeNodes = nodes.ToArray();
             routeEdges = RouteEdges;
         }
@@ -1686,16 +1801,16 @@ namespace WarOfEras.Battle.Core
             var panel = CreateRect("Command Dock", root);
             panel.anchorMin = new Vector2(0.23f, 0f);
             panel.anchorMax = new Vector2(1f, 0f);
-            panel.sizeDelta = new Vector2(0f, 132f);
-            panel.anchoredPosition = new Vector2(0f, 66f);
+            panel.sizeDelta = new Vector2(0f, 184f);
+            panel.anchoredPosition = new Vector2(0f, 92f);
 
             var grid = panel.gameObject.AddComponent<GridLayoutGroup>();
             grid.padding = new RectOffset(8, 8, 8, 8);
-            grid.spacing = new Vector2(12f, 12f);
-            grid.cellSize = new Vector2(182f, 54f);
+            grid.spacing = new Vector2(10f, 10f);
+            grid.cellSize = new Vector2(166f, 48f);
             grid.childAlignment = TextAnchor.LowerRight;
             grid.constraint = GridLayoutGroup.Constraint.FixedRowCount;
-            grid.constraintCount = 2;
+            grid.constraintCount = 3;
 
             for (var i = 0; i < playerUnitDefinitions.Length; i++)
             {
@@ -1705,7 +1820,14 @@ namespace WarOfEras.Battle.Core
                 unitButtons.Add(new UnitButtonBinding(button, GetButtonLabel(button), definition));
             }
 
-            towerButton = CreateButton(panel, "Tower", FormatTowerButtonLabel(), TryBuildTower, new Color(0.31f, 0.43f, 0.45f, 1f));
+            for (var i = 0; i < currentTowerDefinitions.Length; i++)
+            {
+                var towerIndex = i;
+                var definition = currentTowerDefinitions[i];
+                var button = CreateButton(panel, "Tower " + (i + 1), FormatTowerButtonLabel(definition), () => SelectTowerForBuild(towerIndex), new Color(0.31f, 0.43f, 0.45f, 1f));
+                towerButtons.Add(new TowerButtonBinding(button, GetButtonLabel(button), towerIndex, definition));
+            }
+
             resourceWellButton = CreateButton(panel, "Resource Well", FormatResourceWellButtonLabel(), TryBuildResourceWell, new Color(0.24f, 0.46f, 0.36f, 1f));
             agePowerButton = CreateButton(panel, "Age Power", AgePowers[ageIndex].DisplayName, UseAgePower, new Color(0.58f, 0.31f, 0.18f, 1f));
             shieldButton = CreateButton(panel, "Shield Barrier", "\u62a4\u76fe\u5c4f\u969c", UseShieldBarrier, new Color(0.24f, 0.42f, 0.58f, 1f));
@@ -2609,12 +2731,17 @@ namespace WarOfEras.Battle.Core
 
         private string FormatTowerButtonLabel()
         {
-            if (currentTowerDefinition == null)
+            return FormatTowerButtonLabel(currentTowerDefinition);
+        }
+
+        private string FormatTowerButtonLabel(TowerDefinition definition)
+        {
+            if (definition == null)
             {
                 return "\u5efa\u9020\u70ae\u5854";
             }
 
-            return "\u5efa\u9020" + currentTowerDefinition.DisplayName + "\n" + currentTowerDefinition.Cost + " \u91d1\u5e01";
+            return "\u5efa\u9020" + definition.DisplayName + "\n" + definition.Cost + " \u91d1\u5e01";
         }
 
         private string FormatResourceWellButtonLabel()
@@ -2648,7 +2775,17 @@ namespace WarOfEras.Battle.Core
                 }
             }
 
-            SetButtonLabel(towerButton, FormatTowerButtonLabel());
+            for (var i = 0; i < towerButtons.Count && i < currentTowerDefinitions.Length; i++)
+            {
+                var binding = towerButtons[i];
+                binding.Definition = currentTowerDefinitions[i];
+                binding.Button.name = "Tower " + (i + 1);
+                if (binding.Label != null)
+                {
+                    binding.Label.text = FormatTowerButtonLabel(binding.Definition);
+                }
+            }
+
             SetButtonLabel(resourceWellButton, FormatResourceWellButtonLabel());
             SetButtonLabel(agePowerButton, AgePowers[ageIndex].DisplayName);
         }
@@ -2691,6 +2828,19 @@ namespace WarOfEras.Battle.Core
             BeginBuildPlacement(BuildPlacementKind.Tower);
         }
 
+        private void SelectTowerForBuild(int towerIndex)
+        {
+            if (currentTowerDefinitions == null || currentTowerDefinitions.Length == 0)
+            {
+                return;
+            }
+
+            selectedTowerIndex = Mathf.Clamp(towerIndex, 0, Mathf.Max(0, currentTowerDefinitions.Length - 1));
+            currentTowerDefinition = GetTowerDefinition(selectedTowerIndex);
+            towerFrames = GetTowerFrames(selectedTowerIndex);
+            TryBuildTower();
+        }
+
         private void TryBuildResourceWell()
         {
             BeginBuildPlacement(BuildPlacementKind.ResourceWell);
@@ -2708,7 +2858,7 @@ namespace WarOfEras.Battle.Core
             towerObject.transform.position = GetPlayerTowerPosition(slotIndex);
 
             var tower = towerObject.AddComponent<BattleTower>();
-            tower.Configure(this, slotIndex, 0, currentTowerDefinition, towerFrames);
+            tower.Configure(this, slotIndex, 0, selectedTowerIndex, currentTowerDefinition, towerFrames);
             playerTowers[slotIndex] = tower;
             selectedLane = slotIndex;
             GainEraValue(currentTowerDefinition.Cost * 0.32f);
@@ -2775,6 +2925,21 @@ namespace WarOfEras.Battle.Core
             }
         }
 
+        private int GetEnemyTowerTypeIndex(int slotIndex)
+        {
+            if (currentTowerDefinitions == null || currentTowerDefinitions.Length == 0)
+            {
+                return 0;
+            }
+
+            if (slotIndex == 1)
+            {
+                return 0;
+            }
+
+            return Mathf.Clamp(slotIndex, 0, currentTowerDefinitions.Length - 1);
+        }
+
         private void BuildEnemyTowerAt(int slotIndex)
         {
             if (currentTowerDefinition == null || slotIndex < 0 || slotIndex >= enemyTowers.Length || enemyTowers[slotIndex] != null)
@@ -2782,14 +2947,22 @@ namespace WarOfEras.Battle.Core
                 return;
             }
 
-            var towerObject = new GameObject("Enemy " + currentTowerDefinition.DisplayName + " - " + laneNames[slotIndex]);
+            var towerTypeIndex = GetEnemyTowerTypeIndex(slotIndex);
+            var towerDefinition = GetTowerDefinition(towerTypeIndex);
+            var frames = GetTowerFrames(towerTypeIndex);
+            if (towerDefinition == null)
+            {
+                return;
+            }
+
+            var towerObject = new GameObject("Enemy " + towerDefinition.DisplayName + " - " + laneNames[slotIndex]);
             towerObject.transform.SetParent(worldRoot, false);
             towerObject.transform.position = GetEnemyTowerPosition(slotIndex);
 
             var tower = towerObject.AddComponent<BattleTower>();
-            tower.Configure(this, slotIndex, 1, currentTowerDefinition, towerFrames);
+            tower.Configure(this, slotIndex, 1, towerTypeIndex, towerDefinition, frames);
             enemyTowers[slotIndex] = tower;
-            status = "\u654c\u65b9\u5728" + laneNames[slotIndex] + "\u5efa\u8d77\u4e86" + currentTowerDefinition.DisplayName + "\u3002";
+            status = "\u654c\u65b9\u5728" + laneNames[slotIndex] + "\u5efa\u8d77\u4e86" + towerDefinition.DisplayName + "\u3002";
         }
 
         private void BuildEnemyResourceWellAt(int slotIndex)
@@ -3160,7 +3333,8 @@ namespace WarOfEras.Battle.Core
             {
                 if (playerTowers[i] != null)
                 {
-                    playerTowers[i].RefreshVisuals(currentTowerDefinition, towerFrames);
+                    var towerTypeIndex = playerTowers[i].TowerTypeIndex;
+                    playerTowers[i].RefreshVisuals(GetTowerDefinition(towerTypeIndex), GetTowerFrames(towerTypeIndex));
                 }
             }
 
@@ -3168,7 +3342,8 @@ namespace WarOfEras.Battle.Core
             {
                 if (enemyTowers[i] != null)
                 {
-                    enemyTowers[i].RefreshVisuals(currentTowerDefinition, towerFrames);
+                    var towerTypeIndex = enemyTowers[i].TowerTypeIndex;
+                    enemyTowers[i].RefreshVisuals(GetTowerDefinition(towerTypeIndex), GetTowerFrames(towerTypeIndex));
                 }
             }
         }
@@ -3224,17 +3399,27 @@ namespace WarOfEras.Battle.Core
         private UnitDefinition ChooseEnemyDefinition()
         {
             var roll = UnityEngine.Random.value;
-            if (elapsedTime > 75f && roll > 0.76f && enemyUnitDefinitions.Length > 2)
+            if (elapsedTime > 130f && roll > 0.88f && enemyUnitDefinitions.Length > 4)
+            {
+                return enemyUnitDefinitions[4];
+            }
+
+            if (elapsedTime > 95f && roll > 0.7f && enemyUnitDefinitions.Length > 3)
+            {
+                return enemyUnitDefinitions[3];
+            }
+
+            if (elapsedTime > 60f && roll > 0.52f && enemyUnitDefinitions.Length > 2)
             {
                 return enemyUnitDefinitions[2];
             }
 
-            if (elapsedTime > 45f && roll > 0.58f && enemyUnitDefinitions.Length > 1)
+            if (elapsedTime > 28f && roll > 0.35f && enemyUnitDefinitions.Length > 1)
             {
                 return enemyUnitDefinitions[1];
             }
 
-            return roll < 0.52f ? enemyUnitDefinitions[0] : enemyUnitDefinitions[1];
+            return enemyUnitDefinitions[0];
         }
 
         private void RestartBattle()
@@ -3405,17 +3590,24 @@ namespace WarOfEras.Battle.Core
                 }
             }
 
-            if (towerButton != null)
+            for (var i = 0; i < towerButtons.Count; i++)
             {
-                SetButtonLabel(towerButton, FormatTowerButtonLabel());
-                towerButton.interactable = gameStarted
+                var binding = towerButtons[i];
+                if (binding.Label != null)
+                {
+                    binding.Label.text = FormatTowerButtonLabel(binding.Definition);
+                }
+
+                binding.Button.interactable = gameStarted
                     && !gameOver
-                    && currentTowerDefinition != null
-                    && coins >= currentTowerDefinition.Cost
+                    && binding.Definition != null
+                    && coins >= binding.Definition.Cost
                     && HasAvailableBuildSlot(BuildPlacementKind.Tower);
-                SetButtonColor(towerButton, activeBuildPlacement == BuildPlacementKind.Tower
+
+                var selected = i == selectedTowerIndex;
+                SetButtonColor(binding.Button, activeBuildPlacement == BuildPlacementKind.Tower && selected
                     ? new Color(0.78f, 0.16f, 0.1f, 1f)
-                    : new Color(0.31f, 0.43f, 0.45f, 1f));
+                    : selected ? new Color(0.4f, 0.54f, 0.5f, 1f) : new Color(0.31f, 0.43f, 0.45f, 1f));
             }
 
             if (resourceWellButton != null)
@@ -3755,1145 +3947,6 @@ namespace WarOfEras.Battle.Core
                 ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
         }
 
-        internal static Sprite SharedWhiteSprite => WhiteSprite;
 
-        private static Sprite PanelSprite
-        {
-            get
-            {
-                if (panelSprite == null)
-                {
-                    panelSprite = CreateBeveledUiSprite(96, 64, 10, 0.72f, 1f);
-                }
-
-                return panelSprite;
-            }
-        }
-
-        private static Sprite ButtonSprite
-        {
-            get
-            {
-                if (buttonSprite == null)
-                {
-                    buttonSprite = CreateBeveledUiSprite(120, 48, 14, 0.62f, 1f);
-                }
-
-                return buttonSprite;
-            }
-        }
-
-        private static Sprite IconDiscSprite
-        {
-            get
-            {
-                if (iconDiscSprite == null)
-                {
-                    iconDiscSprite = CreateDiscUiSprite(48);
-                }
-
-                return iconDiscSprite;
-            }
-        }
-
-        private static Sprite VfxCircleSprite
-        {
-            get
-            {
-                if (vfxCircleSprite == null)
-                {
-                    vfxCircleSprite = CreateSoftCircleSprite(96);
-                }
-
-                return vfxCircleSprite;
-            }
-        }
-
-        private static Sprite ResourceWellSiteSprite
-        {
-            get
-            {
-                if (resourceWellSiteSprite == null)
-                {
-                    resourceWellSiteSprite = CreateResourceWellSiteSprite(96);
-                }
-
-                return resourceWellSiteSprite;
-            }
-        }
-
-        private static Sprite ResourceWellBuiltSprite
-        {
-            get
-            {
-                if (resourceWellBuiltSprite == null)
-                {
-                    resourceWellBuiltSprite = CreateResourceWellBuiltSprite(128);
-                }
-
-                return resourceWellBuiltSprite;
-            }
-        }
-
-        private static Sprite WhiteSprite
-        {
-            get
-            {
-                if (whiteSprite != null)
-                {
-                    return whiteSprite;
-                }
-
-                var texture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-                texture.SetPixel(0, 0, Color.white);
-                texture.Apply();
-                whiteSprite = Sprite.Create(texture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f));
-                return whiteSprite;
-            }
-        }
-
-        private static Sprite CreateBeveledUiSprite(int width, int height, int cornerRadius, float baseShade, float alpha)
-        {
-            var texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            texture.wrapMode = TextureWrapMode.Clamp;
-            texture.filterMode = FilterMode.Bilinear;
-
-            for (var y = 0; y < height; y++)
-            {
-                for (var x = 0; x < width; x++)
-                {
-                    if (!IsInsideRoundedRect(x, y, width, height, cornerRadius))
-                    {
-                        texture.SetPixel(x, y, Color.clear);
-                        continue;
-                    }
-
-                    var left = x / (float)(width - 1);
-                    var top = y / (float)(height - 1);
-                    var edge = Mathf.Min(Mathf.Min(x, width - 1 - x), Mathf.Min(y, height - 1 - y));
-                    var bevel = edge < 3f ? -0.24f : edge < 8f ? 0.18f : 0f;
-                    var diagonalLight = Mathf.Lerp(0.12f, -0.1f, (left + (1f - top)) * 0.5f);
-                    var shade = Mathf.Clamp01(baseShade + bevel + diagonalLight);
-                    texture.SetPixel(x, y, new Color(shade, shade, shade, alpha));
-                }
-            }
-
-            texture.Apply();
-            return Sprite.Create(
-                texture,
-                new Rect(0f, 0f, width, height),
-                new Vector2(0.5f, 0.5f),
-                100f,
-                0,
-                SpriteMeshType.FullRect,
-                new Vector4(cornerRadius, cornerRadius, cornerRadius, cornerRadius));
-        }
-
-        private static Sprite CreateDiscUiSprite(int size)
-        {
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            texture.wrapMode = TextureWrapMode.Clamp;
-            texture.filterMode = FilterMode.Bilinear;
-
-            var center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
-            var radius = size * 0.48f;
-            for (var y = 0; y < size; y++)
-            {
-                for (var x = 0; x < size; x++)
-                {
-                    var distance = Vector2.Distance(new Vector2(x, y), center);
-                    if (distance > radius)
-                    {
-                        texture.SetPixel(x, y, Color.clear);
-                        continue;
-                    }
-
-                    var ring = distance > radius - 4f ? 0.48f : 0f;
-                    var highlight = y > center.y ? 0.16f : -0.06f;
-                    var shade = Mathf.Clamp01(0.7f + ring + highlight);
-                    texture.SetPixel(x, y, new Color(shade, shade, shade, 1f));
-                }
-            }
-
-            texture.Apply();
-            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f));
-        }
-
-        private static Sprite CreateSoftCircleSprite(int size)
-        {
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            texture.wrapMode = TextureWrapMode.Clamp;
-            texture.filterMode = FilterMode.Bilinear;
-
-            var center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
-            var radius = size * 0.48f;
-            for (var y = 0; y < size; y++)
-            {
-                for (var x = 0; x < size; x++)
-                {
-                    var distance = Vector2.Distance(new Vector2(x, y), center);
-                    if (distance > radius)
-                    {
-                        texture.SetPixel(x, y, Color.clear);
-                        continue;
-                    }
-
-                    var normalized = Mathf.Clamp01(distance / radius);
-                    var alpha = Mathf.SmoothStep(0.85f, 0.05f, normalized);
-                    if (normalized > 0.72f)
-                    {
-                        alpha = Mathf.Max(alpha, Mathf.SmoothStep(1f, 0.72f, normalized) * 0.75f);
-                    }
-
-                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
-                }
-            }
-
-            texture.Apply();
-            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
-        }
-
-        private static Sprite CreateResourceWellSiteSprite(int size)
-        {
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            texture.wrapMode = TextureWrapMode.Clamp;
-            texture.filterMode = FilterMode.Bilinear;
-
-            var center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
-            var half = size * 0.5f;
-            for (var y = 0; y < size; y++)
-            {
-                for (var x = 0; x < size; x++)
-                {
-                    var dx = (x - center.x) / half;
-                    var dy = (y - center.y) / half;
-                    var distance = Mathf.Sqrt(dx * dx + dy * dy);
-                    var diamond = Mathf.Abs(dx) + Mathf.Abs(dy);
-                    var alpha = 0f;
-
-                    if (distance > 0.36f && distance < 0.46f)
-                    {
-                        alpha = Mathf.Max(alpha, 0.82f);
-                    }
-
-                    if (diamond > 0.62f && diamond < 0.72f)
-                    {
-                        alpha = Mathf.Max(alpha, 0.62f);
-                    }
-
-                    if (Mathf.Abs(dx) < 0.045f && Mathf.Abs(dy) < 0.32f)
-                    {
-                        alpha = Mathf.Max(alpha, 0.7f);
-                    }
-
-                    if (Mathf.Abs(dy) < 0.045f && Mathf.Abs(dx) < 0.32f)
-                    {
-                        alpha = Mathf.Max(alpha, 0.7f);
-                    }
-
-                    if (distance < 0.12f)
-                    {
-                        alpha = Mathf.Max(alpha, 0.9f);
-                    }
-
-                    texture.SetPixel(x, y, alpha > 0f ? new Color(1f, 1f, 1f, alpha) : Color.clear);
-                }
-            }
-
-            texture.Apply();
-            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
-        }
-
-        private static Sprite CreateResourceWellBuiltSprite(int size)
-        {
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            texture.wrapMode = TextureWrapMode.Clamp;
-            texture.filterMode = FilterMode.Bilinear;
-
-            var center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.45f);
-            var half = size * 0.5f;
-            for (var y = 0; y < size; y++)
-            {
-                for (var x = 0; x < size; x++)
-                {
-                    var dx = (x - center.x) / half;
-                    var dy = (y - center.y) / half;
-                    var body = dx * dx / 0.48f + dy * dy / 0.24f;
-                    var inner = dx * dx / 0.26f + dy * dy / 0.1f;
-                    var post = Mathf.Abs(dx) > 0.3f && Mathf.Abs(dx) < 0.42f && dy > -0.06f && dy < 0.48f;
-                    var roof = Mathf.Abs(dy - 0.5f) < 0.08f && Mathf.Abs(dx) < 0.5f - Mathf.Abs(dy - 0.5f);
-
-                    if (inner <= 1f)
-                    {
-                        var shimmer = 0.08f * Mathf.Sin((x + y) * 0.18f);
-                        texture.SetPixel(x, y, new Color(0.16f + shimmer, 0.54f + shimmer, 0.78f + shimmer, 0.96f));
-                    }
-                    else if (body <= 1f || post || roof)
-                    {
-                        var shade = Mathf.Clamp01(0.58f + 0.12f * Mathf.Sin((x * 3f + y * 5f) * 0.05f) - Mathf.Abs(dy) * 0.1f);
-                        texture.SetPixel(x, y, new Color(shade, shade * 0.92f, shade * 0.76f, 1f));
-                    }
-                    else if (body <= 1.18f)
-                    {
-                        texture.SetPixel(x, y, new Color(0.08f, 0.06f, 0.04f, 0.36f));
-                    }
-                    else
-                    {
-                        texture.SetPixel(x, y, Color.clear);
-                    }
-                }
-            }
-
-            texture.Apply();
-            return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
-        }
-
-        private static bool IsInsideRoundedRect(int x, int y, int width, int height, int radius)
-        {
-            var cornerX = x < radius ? radius : width - 1 - radius;
-            var cornerY = y < radius ? radius : height - 1 - radius;
-            if ((x >= radius && x < width - radius) || (y >= radius && y < height - radius))
-            {
-                return true;
-            }
-
-            return Vector2.Distance(new Vector2(x, y), new Vector2(cornerX, cornerY)) <= radius;
-        }
-
-        private sealed class UnitButtonBinding
-        {
-            public UnitButtonBinding(Button button, Text label, UnitDefinition definition)
-            {
-                Button = button;
-                Label = label;
-                Definition = definition;
-            }
-
-            public Button Button { get; }
-            public Text Label { get; }
-            public UnitDefinition Definition { get; set; }
-        }
-
-        private sealed class AgeVisualSet
-        {
-            public AgeVisualSet(string key, string mapSpritePath, string baseSpritePath, string unitRoot, string[] unitFrameFolders, string towerFramePrefix, Color fallbackTint)
-            {
-                Key = key;
-                MapSpritePath = mapSpritePath;
-                BaseSpritePath = baseSpritePath;
-                UnitRoot = unitRoot;
-                UnitFrameFolders = unitFrameFolders;
-                TowerFramePrefix = towerFramePrefix;
-                FallbackTint = fallbackTint;
-            }
-
-            public string Key { get; }
-            public string MapSpritePath { get; }
-            public string BaseSpritePath { get; }
-            public string UnitRoot { get; }
-            public string[] UnitFrameFolders { get; }
-            public string TowerFramePrefix { get; }
-            public Color FallbackTint { get; }
-        }
-
-        private readonly struct RouteEdge
-        {
-            public RouteEdge(int a, int b)
-            {
-                A = a;
-                B = b;
-            }
-
-            public int A { get; }
-            public int B { get; }
-        }
-
-        private readonly struct RouteTarget
-        {
-            public RouteTarget(int edgeA, int edgeB, Vector3 position)
-            {
-                EdgeA = edgeA;
-                EdgeB = edgeB;
-                Position = position;
-            }
-
-            public int EdgeA { get; }
-            public int EdgeB { get; }
-            public Vector3 Position { get; }
-        }
-
-        private sealed class RouteCandidate
-        {
-            public RouteCandidate(List<Vector3> points, float cost, int laneIndex)
-            {
-                Points = points;
-                Cost = cost;
-                LaneIndex = laneIndex;
-            }
-
-            public List<Vector3> Points { get; }
-            public float Cost { get; }
-            public int LaneIndex { get; }
-        }
-
-        private sealed class RoutePreview
-        {
-            public RoutePreview(GameObject root, RouteCandidate candidate)
-            {
-                Root = root;
-                Candidate = candidate;
-            }
-
-            public GameObject Root { get; }
-            public RouteCandidate Candidate { get; }
-        }
-
-        private sealed class BuildPlacementPreview
-        {
-            public BuildPlacementPreview(GameObject root, int slotIndex)
-            {
-                Root = root;
-                SlotIndex = slotIndex;
-            }
-
-            public GameObject Root { get; }
-            public int SlotIndex { get; }
-        }
-    }
-
-    public sealed class UnitDefinition
-    {
-        public UnitDefinition(
-            string displayName,
-            string key,
-            int cost,
-            float maxHealth,
-            float damage,
-            float speed,
-            float attackRange,
-            float attackInterval,
-            float scale,
-            int reward,
-            Sprite[] moveFrames,
-            Sprite[] attackFrames,
-            Color tint)
-        {
-            DisplayName = displayName;
-            Key = key;
-            Cost = cost;
-            MaxHealth = maxHealth;
-            Damage = damage;
-            Speed = speed;
-            AttackRange = attackRange;
-            AttackInterval = attackInterval;
-            Scale = scale;
-            Reward = reward;
-            MoveFrames = moveFrames;
-            AttackFrames = attackFrames;
-            Tint = tint;
-        }
-
-        public string DisplayName { get; }
-        public string Key { get; }
-        public int Cost { get; }
-        public float MaxHealth { get; }
-        public float Damage { get; }
-        public float Speed { get; }
-        public float AttackRange { get; }
-        public float AttackInterval { get; }
-        public float Scale { get; }
-        public int Reward { get; }
-        public Sprite[] MoveFrames { get; }
-        public Sprite[] AttackFrames { get; }
-        public Color Tint { get; }
-    }
-
-    public sealed class BattleTimedDestroy : MonoBehaviour
-    {
-        private float remaining = 1f;
-
-        public void Configure(float duration)
-        {
-            remaining = Mathf.Max(0.05f, duration);
-        }
-
-        private void Update()
-        {
-            remaining -= Time.deltaTime;
-            if (remaining <= 0f)
-            {
-                Destroy(gameObject);
-            }
-        }
-    }
-
-    public sealed class BattleVfxFade : MonoBehaviour
-    {
-        private SpriteRenderer spriteRenderer;
-        private LineRenderer lineRenderer;
-        private Vector3 initialScale;
-        private Color initialSpriteColor;
-        private Color initialLineStartColor;
-        private Color initialLineEndColor;
-        private float initialLineWidth;
-        private float duration = 1f;
-        private float elapsed;
-        private float expandRate;
-        private float rotationSpeed;
-
-        public void Configure(float effectDuration, float scaleExpansion, float degreesPerSecond)
-        {
-            duration = Mathf.Max(0.05f, effectDuration);
-            expandRate = scaleExpansion;
-            rotationSpeed = degreesPerSecond;
-            spriteRenderer = GetComponent<SpriteRenderer>();
-            lineRenderer = GetComponent<LineRenderer>();
-            initialScale = transform.localScale;
-
-            if (spriteRenderer != null)
-            {
-                initialSpriteColor = spriteRenderer.color;
-            }
-
-            if (lineRenderer != null)
-            {
-                initialLineStartColor = lineRenderer.startColor;
-                initialLineEndColor = lineRenderer.endColor;
-                initialLineWidth = lineRenderer.widthMultiplier;
-            }
-        }
-
-        private void Update()
-        {
-            elapsed += Time.deltaTime;
-            var t = Mathf.Clamp01(elapsed / duration);
-            var alpha = 1f - t;
-
-            if (expandRate != 0f)
-            {
-                transform.localScale = initialScale * (1f + expandRate * t);
-            }
-
-            if (rotationSpeed != 0f)
-            {
-                transform.Rotate(0f, 0f, rotationSpeed * Time.deltaTime);
-            }
-
-            if (spriteRenderer != null)
-            {
-                var color = initialSpriteColor;
-                color.a *= alpha;
-                spriteRenderer.color = color;
-            }
-
-            if (lineRenderer != null)
-            {
-                var start = initialLineStartColor;
-                var end = initialLineEndColor;
-                start.a *= alpha;
-                end.a *= alpha;
-                lineRenderer.startColor = start;
-                lineRenderer.endColor = end;
-                lineRenderer.widthMultiplier = initialLineWidth * Mathf.Lerp(1f, 0.45f, t);
-            }
-
-            if (elapsed >= duration)
-            {
-                Destroy(gameObject);
-            }
-        }
-    }
-
-    public sealed class BattleBuildPromptPulse : MonoBehaviour
-    {
-        private SpriteRenderer spriteRenderer;
-        private Vector3 baseScale;
-        private Color baseColor;
-        private float minScale = 0.85f;
-        private float maxScale = 1.15f;
-        private float pulseSpeed = 2.4f;
-
-        public void Configure(float minimumScale, float maximumScale, float speed)
-        {
-            minScale = minimumScale;
-            maxScale = maximumScale;
-            pulseSpeed = speed;
-            baseScale = transform.localScale;
-            spriteRenderer = GetComponent<SpriteRenderer>();
-            baseColor = spriteRenderer != null ? spriteRenderer.color : Color.white;
-        }
-
-        private void Update()
-        {
-            if (baseScale == Vector3.zero)
-            {
-                baseScale = transform.localScale;
-            }
-
-            var wave = (Mathf.Sin(Time.time * pulseSpeed) + 1f) * 0.5f;
-            transform.localScale = baseScale * Mathf.Lerp(minScale, maxScale, wave);
-
-            if (spriteRenderer != null)
-            {
-                var color = baseColor;
-                color.a = baseColor.a * Mathf.Lerp(0.68f, 1f, wave);
-                spriteRenderer.color = color;
-            }
-        }
-    }
-
-    public sealed class TowerDefinition
-    {
-        public TowerDefinition(string displayName, int cost, float damage, float attackInterval, float range, Color tint)
-        {
-            DisplayName = displayName;
-            Cost = cost;
-            Damage = damage;
-            AttackInterval = attackInterval;
-            Range = range;
-            Tint = tint;
-        }
-
-        public string DisplayName { get; }
-        public int Cost { get; }
-        public float Damage { get; }
-        public float AttackInterval { get; }
-        public float Range { get; }
-        public Color Tint { get; }
-    }
-
-    public sealed class AgePowerDefinition
-    {
-        public AgePowerDefinition(string displayName, float cooldown, float damage, bool isGlobal, float statusDuration, float speedMultiplier, float attackIntervalMultiplier)
-        {
-            DisplayName = displayName;
-            Cooldown = cooldown;
-            Damage = damage;
-            IsGlobal = isGlobal;
-            StatusDuration = statusDuration;
-            SpeedMultiplier = speedMultiplier;
-            AttackIntervalMultiplier = attackIntervalMultiplier;
-        }
-
-        public string DisplayName { get; }
-        public float Cooldown { get; }
-        public float Damage { get; }
-        public bool IsGlobal { get; }
-        public float StatusDuration { get; }
-        public float SpeedMultiplier { get; }
-        public float AttackIntervalMultiplier { get; }
-    }
-
-    public sealed class BattleUnit : MonoBehaviour
-    {
-        private const float AttackImpulseDuration = 0.18f;
-        private const float HitReactionDuration = 0.22f;
-
-        private BattleGameController controller;
-        private Transform visualRoot;
-        private SpriteRenderer spriteRenderer;
-        private SpriteRenderer shadowRenderer;
-        private Vector3[] routePoints;
-        private Sprite holdSprite;
-        private float health;
-        private float damage;
-        private float speed;
-        private float attackTimer;
-        private float frameTimer;
-        private float hitFlash;
-        private float attackImpulseTimer;
-        private float hitReactionTimer;
-        private float attackImpulseDirection;
-        private float hitReactionDirection;
-        private float statusTimer;
-        private float statusSpeedMultiplier = 1f;
-        private float statusAttackIntervalMultiplier = 1f;
-        private int frameIndex;
-        private int routeTargetIndex;
-        private bool attacking;
-        private bool stopAtRouteEnd;
-        private bool reachedHoldPoint;
-
-        public UnitDefinition Definition { get; private set; }
-        public int Team { get; private set; }
-        public int LaneIndex { get; private set; }
-        public bool IsAlive => health > 0f;
-
-        public void Configure(
-            BattleGameController owner,
-            UnitDefinition definition,
-            int team,
-            int laneIndex,
-            Vector3 position,
-            float healthMultiplier,
-            float damageMultiplier,
-            float speedMultiplier,
-            Vector3[] customRoute = null,
-            bool stopWhenRouteEnds = false)
-        {
-            controller = owner;
-            Definition = definition;
-            Team = team;
-            LaneIndex = laneIndex;
-            health = definition.MaxHealth * healthMultiplier;
-            damage = definition.Damage * damageMultiplier;
-            speed = definition.Speed * speedMultiplier;
-            var usesCustomRoute = customRoute != null && customRoute.Length > 0;
-            routePoints = usesCustomRoute ? customRoute : owner.GetLaneRoute(laneIndex);
-            routeTargetIndex = team == 0 ? 1 : routePoints.Length - 2;
-            stopAtRouteEnd = stopWhenRouteEnds;
-
-            transform.position = usesCustomRoute ? routePoints[0] : position;
-            transform.localScale = Vector3.one * definition.Scale * owner.UnitVisualScale;
-
-            CreateGroundShadow();
-
-            var visualObject = new GameObject("Unit Visual", typeof(SpriteRenderer));
-            visualObject.transform.SetParent(transform, false);
-            visualRoot = visualObject.transform;
-
-            spriteRenderer = visualObject.GetComponent<SpriteRenderer>();
-            spriteRenderer.sprite = definition.MoveFrames[0];
-            holdSprite = spriteRenderer.sprite;
-            spriteRenderer.flipX = team == 1;
-            spriteRenderer.color = GetBaseTint();
-            UpdateGroundShadow();
-            UpdateSorting();
-        }
-
-        private void Update()
-        {
-            if (controller == null || Definition == null || !IsAlive || controller.IsGameOver)
-            {
-                return;
-            }
-
-            attackTimer -= Time.deltaTime;
-            hitFlash = Mathf.Max(0f, hitFlash - Time.deltaTime);
-            attackImpulseTimer = Mathf.Max(0f, attackImpulseTimer - Time.deltaTime);
-            hitReactionTimer = Mathf.Max(0f, hitReactionTimer - Time.deltaTime);
-            UpdateStatusEffect();
-            attacking = false;
-
-            var target = controller.FindNearestEnemy(this);
-            if (target != null && Vector2.Distance(target.transform.position, transform.position) <= BattleGameController.GetUnitEngageDistance(Definition))
-            {
-                attacking = true;
-                TryAttackUnit(target);
-            }
-            else if (reachedHoldPoint)
-            {
-                attacking = false;
-                HoldPosition();
-            }
-            else if (IsAtEnemyBase())
-            {
-                attacking = true;
-                TryAttackBase();
-            }
-            else
-            {
-                MoveForward();
-            }
-
-            UpdateAnimation();
-            UpdateTint();
-            UpdateVisualPose();
-            UpdateSorting();
-        }
-
-        public void TakeDamage(float amount, int attackerTeam)
-        {
-            if (!IsAlive)
-            {
-                return;
-            }
-
-            health -= amount;
-            hitFlash = 0.22f;
-            hitReactionTimer = HitReactionDuration;
-            hitReactionDirection = attackerTeam == 0 ? 1f : -1f;
-
-            if (health <= 0f)
-            {
-                controller.NotifyUnitKilled(this, attackerTeam);
-                Destroy(gameObject);
-            }
-        }
-
-        public void ApplyStatusEffect(float duration, float speedMultiplier, float attackIntervalMultiplier)
-        {
-            if (!IsAlive || duration <= 0f)
-            {
-                return;
-            }
-
-            statusTimer = Mathf.Max(statusTimer, duration);
-            statusSpeedMultiplier = Mathf.Min(statusSpeedMultiplier, speedMultiplier);
-            statusAttackIntervalMultiplier = Mathf.Max(statusAttackIntervalMultiplier, attackIntervalMultiplier);
-            hitFlash = Mathf.Max(hitFlash, 0.18f);
-        }
-
-        private void UpdateStatusEffect()
-        {
-            if (statusTimer <= 0f)
-            {
-                return;
-            }
-
-            statusTimer = Mathf.Max(0f, statusTimer - Time.deltaTime);
-            if (statusTimer <= 0f)
-            {
-                statusSpeedMultiplier = 1f;
-                statusAttackIntervalMultiplier = 1f;
-            }
-        }
-
-        private void TryAttackUnit(BattleUnit target)
-        {
-            if (attackTimer > 0f)
-            {
-                return;
-            }
-
-            attackImpulseTimer = AttackImpulseDuration;
-            attackImpulseDirection = Team == 0 ? 1f : -1f;
-            var hitPosition = Vector3.Lerp(transform.position, target.transform.position, 0.58f);
-            controller.SpawnCombatHitEffect(hitPosition, Team, Definition.AttackRange > 1.3f);
-            target.TakeDamage(damage, Team);
-            attackTimer = Definition.AttackInterval * statusAttackIntervalMultiplier;
-        }
-
-        private void TryAttackBase()
-        {
-            if (attackTimer > 0f)
-            {
-                return;
-            }
-
-            attackImpulseTimer = AttackImpulseDuration;
-            attackImpulseDirection = Team == 0 ? 1f : -1f;
-            var basePosition = controller.GetBasePosition(Team == 0 ? 1 : 0);
-            controller.SpawnCombatHitEffect(new Vector3(basePosition.x, transform.position.y, 0f), Team, Definition.AttackRange > 1.3f);
-            controller.DamageBase(Team == 0 ? 1 : 0, damage);
-            attackTimer = Definition.AttackInterval * statusAttackIntervalMultiplier;
-        }
-
-        private void MoveForward()
-        {
-            if (routePoints == null || routePoints.Length == 0 || routeTargetIndex < 0 || routeTargetIndex >= routePoints.Length)
-            {
-                var direction = Team == 0 ? 1f : -1f;
-                transform.position += new Vector3(direction * speed * statusSpeedMultiplier * Time.deltaTime, 0f, 0f);
-                return;
-            }
-
-            var target = routePoints[routeTargetIndex];
-            transform.position = Vector3.MoveTowards(transform.position, target, speed * statusSpeedMultiplier * Time.deltaTime);
-
-            if (Vector3.Distance(transform.position, target) <= 0.025f)
-            {
-                routeTargetIndex += Team == 0 ? 1 : -1;
-                if (stopAtRouteEnd && (routeTargetIndex >= routePoints.Length || routeTargetIndex < 0))
-                {
-                    reachedHoldPoint = true;
-                    holdSprite = spriteRenderer != null ? spriteRenderer.sprite : holdSprite;
-                }
-            }
-        }
-
-        private void HoldPosition()
-        {
-            if (spriteRenderer != null && holdSprite != null)
-            {
-                spriteRenderer.sprite = holdSprite;
-            }
-        }
-
-        private bool IsAtEnemyBase()
-        {
-            if (stopAtRouteEnd)
-            {
-                return false;
-            }
-
-            if (routePoints != null && routePoints.Length > 0)
-            {
-                return Team == 0 ? routeTargetIndex >= routePoints.Length : routeTargetIndex < 0;
-            }
-
-            var targetBase = controller.GetBasePosition(Team == 0 ? 1 : 0);
-            return Team == 0
-                ? transform.position.x >= targetBase.x - 0.55f
-                : transform.position.x <= targetBase.x + 0.55f;
-        }
-
-        private void UpdateAnimation()
-        {
-            var frames = attacking && Definition.AttackFrames.Length > 0 ? Definition.AttackFrames : Definition.MoveFrames;
-            if (reachedHoldPoint && !attacking)
-            {
-                HoldPosition();
-                return;
-            }
-
-            if (frames.Length == 0)
-            {
-                return;
-            }
-
-            frameTimer += Time.deltaTime;
-            var frameDuration = attacking ? 0.11f : 0.16f;
-            if (frameTimer < frameDuration)
-            {
-                return;
-            }
-
-            frameTimer = 0f;
-            frameIndex = (frameIndex + 1) % frames.Length;
-            spriteRenderer.sprite = frames[frameIndex];
-            UpdateGroundShadow();
-        }
-
-        private void UpdateTint()
-        {
-            var baseColor = GetBaseTint();
-            spriteRenderer.color = hitFlash > 0f ? Color.Lerp(baseColor, Color.red, 0.55f) : baseColor;
-        }
-
-        private void UpdateVisualPose()
-        {
-            if (visualRoot == null)
-            {
-                return;
-            }
-
-            var parentScale = Mathf.Max(0.01f, transform.localScale.x);
-            var localOffset = Vector3.zero;
-            var rotation = 0f;
-
-            if (attackImpulseTimer > 0f)
-            {
-                var pulse = Mathf.Sin((attackImpulseTimer / AttackImpulseDuration) * Mathf.PI);
-                localOffset.x += attackImpulseDirection * pulse * 0.12f / parentScale;
-                rotation += attackImpulseDirection * pulse * -3.5f;
-            }
-
-            if (hitReactionTimer > 0f)
-            {
-                var pulse = Mathf.Sin((hitReactionTimer / HitReactionDuration) * Mathf.PI);
-                localOffset.x += hitReactionDirection * pulse * 0.08f / parentScale;
-                localOffset.y += pulse * 0.03f / parentScale;
-                rotation += hitReactionDirection * pulse * 4.5f;
-            }
-
-            visualRoot.localPosition = localOffset;
-            visualRoot.localRotation = Quaternion.Euler(0f, 0f, rotation);
-        }
-
-        private Color GetBaseTint()
-        {
-            var tint = Definition != null ? Definition.Tint : Color.white;
-            if (Team == 1)
-            {
-                tint = Color.Lerp(tint, new Color(1f, 0.5f, 0.42f, 1f), 0.35f);
-            }
-
-            if (statusTimer > 0f)
-            {
-                tint = Color.Lerp(tint, new Color(0.55f, 0.9f, 1f, 1f), 0.25f);
-            }
-
-            return tint;
-        }
-
-        private void CreateGroundShadow()
-        {
-            var shadowObject = new GameObject("Ground Shadow", typeof(SpriteRenderer));
-            shadowObject.transform.SetParent(transform, false);
-
-            shadowRenderer = shadowObject.GetComponent<SpriteRenderer>();
-            shadowRenderer.sprite = BattleGameController.SharedWhiteSprite;
-            shadowRenderer.color = new Color(0.03f, 0.025f, 0.018f, 0.32f);
-        }
-
-        private void UpdateGroundShadow()
-        {
-            if (shadowRenderer == null || spriteRenderer == null || spriteRenderer.sprite == null)
-            {
-                return;
-            }
-
-            var parentScale = Mathf.Max(0.01f, transform.localScale.x);
-            var spriteBounds = spriteRenderer.sprite.bounds;
-            var worldWidth = Mathf.Clamp(spriteBounds.size.x * transform.localScale.x * 0.68f, 0.36f, 0.95f);
-            shadowRenderer.transform.localScale = new Vector3(worldWidth / parentScale, 0.1f / parentScale, 1f);
-            shadowRenderer.transform.localPosition = new Vector3(0f, -spriteBounds.extents.y + 0.08f / parentScale, 0f);
-        }
-
-        private void UpdateSorting()
-        {
-            if (spriteRenderer == null)
-            {
-                return;
-            }
-
-            var order = 30 + Mathf.RoundToInt((4.5f - transform.position.y) * 10f);
-            spriteRenderer.sortingOrder = order + Team;
-            if (shadowRenderer != null)
-            {
-                shadowRenderer.sortingOrder = order - 1;
-            }
-        }
-    }
-
-    public sealed class BattleTower : MonoBehaviour
-    {
-        private BattleGameController controller;
-        private SpriteRenderer spriteRenderer;
-        private SpriteRenderer shadowRenderer;
-        private Sprite[] frames;
-        private TowerDefinition definition;
-        private float attackTimer;
-        private float frameTimer;
-        private int laneIndex;
-        private int team;
-        private int frameIndex;
-
-        public void Configure(BattleGameController owner, int lane, int towerTeam, TowerDefinition towerDefinition, Sprite[] towerFrames)
-        {
-            controller = owner;
-            laneIndex = lane;
-            team = towerTeam;
-            definition = towerDefinition;
-            frames = towerFrames;
-
-            transform.localScale = Vector3.one * owner.TowerVisualScale;
-            CreateGroundShadow();
-
-            spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
-            spriteRenderer.sprite = frames != null && frames.Length > 0 ? frames[0] : null;
-            spriteRenderer.color = definition != null ? definition.Tint : new Color(1f, 0.94f, 0.78f, 1f);
-            spriteRenderer.flipX = team == 1;
-            if (team == 1)
-            {
-                spriteRenderer.color = Color.Lerp(spriteRenderer.color, new Color(1f, 0.42f, 0.32f, 1f), 0.38f);
-            }
-
-            UpdateGroundShadow();
-            UpdateSorting();
-        }
-
-        public void RefreshVisuals(TowerDefinition towerDefinition, Sprite[] towerFrames)
-        {
-            definition = towerDefinition;
-            frames = towerFrames;
-            frameIndex = 0;
-            frameTimer = 0f;
-
-            if (spriteRenderer == null)
-            {
-                return;
-            }
-
-            spriteRenderer.sprite = frames != null && frames.Length > 0 ? frames[0] : null;
-            spriteRenderer.color = definition != null ? definition.Tint : new Color(1f, 0.94f, 0.78f, 1f);
-            spriteRenderer.flipX = team == 1;
-            if (team == 1)
-            {
-                spriteRenderer.color = Color.Lerp(spriteRenderer.color, new Color(1f, 0.42f, 0.32f, 1f), 0.38f);
-            }
-
-            UpdateGroundShadow();
-            UpdateSorting();
-        }
-
-        private void Update()
-        {
-            if (controller == null || controller.IsGameOver)
-            {
-                return;
-            }
-
-            attackTimer -= Time.deltaTime;
-            Animate();
-
-            if (attackTimer > 0f)
-            {
-                return;
-            }
-
-            var range = definition != null ? definition.Range : 3.4f;
-            var target = controller.FindTowerTarget(team, laneIndex, transform.position, range);
-            if (target == null)
-            {
-                return;
-            }
-
-            var damage = definition != null ? definition.Damage : 34f;
-            var interval = definition != null ? definition.AttackInterval : 1.05f;
-            var multiplier = team == 0 ? controller.TowerDamageMultiplier : 1f;
-            controller.SpawnCombatHitEffect(target.transform.position, team, true);
-            target.TakeDamage(damage * multiplier, team);
-            attackTimer = interval;
-        }
-
-        private void Animate()
-        {
-            if (frames == null || frames.Length == 0)
-            {
-                return;
-            }
-
-            frameTimer += Time.deltaTime;
-            if (frameTimer < 0.16f)
-            {
-                return;
-            }
-
-            frameTimer = 0f;
-            frameIndex = (frameIndex + 1) % frames.Length;
-            spriteRenderer.sprite = frames[frameIndex];
-            UpdateGroundShadow();
-        }
-
-        private void CreateGroundShadow()
-        {
-            var shadowObject = new GameObject("Tower Shadow", typeof(SpriteRenderer));
-            shadowObject.transform.SetParent(transform, false);
-
-            shadowRenderer = shadowObject.GetComponent<SpriteRenderer>();
-            shadowRenderer.sprite = BattleGameController.SharedWhiteSprite;
-            shadowRenderer.color = new Color(0.025f, 0.02f, 0.015f, 0.28f);
-        }
-
-        private void UpdateGroundShadow()
-        {
-            if (shadowRenderer == null || spriteRenderer == null || spriteRenderer.sprite == null)
-            {
-                return;
-            }
-
-            var parentScale = Mathf.Max(0.01f, transform.localScale.x);
-            var spriteBounds = spriteRenderer.sprite.bounds;
-            var worldWidth = Mathf.Clamp(spriteBounds.size.x * transform.localScale.x * 0.72f, 0.65f, 1.35f);
-            shadowRenderer.transform.localScale = new Vector3(worldWidth / parentScale, 0.16f / parentScale, 1f);
-            shadowRenderer.transform.localPosition = new Vector3(0f, -spriteBounds.extents.y + 0.12f / parentScale, 0f);
-        }
-
-        private void UpdateSorting()
-        {
-            if (spriteRenderer == null)
-            {
-                return;
-            }
-
-            var order = 24 + Mathf.RoundToInt((4.5f - transform.position.y) * 10f);
-            spriteRenderer.sortingOrder = order;
-            if (shadowRenderer != null)
-            {
-                shadowRenderer.sortingOrder = order - 1;
-            }
-        }
     }
 }

@@ -27,17 +27,17 @@ namespace WarOfEras.Battle.Core
 
     public static class GameSession
     {
-        private static readonly BattleMapDefinition forestThreeLanes = new BattleMapDefinition(
-            "barbarian_forest_three_lanes",
-            "\u86ee\u8352\u90e8\u843d - \u6218\u573a\u6837\u672c v2",
-            "Barbarian/Maps/ForestThreeLanes",
-            "\u9ad8\u6e05\u771f\u5b9e\u5730\u56fe\uff0c\u4e09\u6761\u9053\u8def\u7a7f\u8fc7\u6cb3\u6d41\u4e0e\u636e\u70b9\u3002");
+        private static readonly BattleMapDefinition pixelFrontlineThreeLanes = new BattleMapDefinition(
+            "pixel_frontline_three_lanes",
+            "\u50cf\u7d20\u6218\u7ebf - \u65f6\u4ee3\u53d8\u4f53",
+            "Battle/Maps/PixelFrontline_Barbarian",
+            "\u540c\u4e00\u4e09\u8def\u6218\u573a\u5e03\u5c40\u968f\u65f6\u4ee3\u8fdb\u5316\u5207\u6362\u4e3b\u9898\uff1a\u86ee\u8352\u3001\u673a\u68b0\u3001\u7535\u529b\u3001\u6838\u80fd\u548c\u661f\u6d77\u90fd\u6709\u72ec\u7acb\u50cf\u7d20\u5730\u56fe\u3002");
 
-        private static readonly BattleMapDefinition[] maps = { forestThreeLanes };
+        private static readonly BattleMapDefinition[] maps = { pixelFrontlineThreeLanes };
 
         static GameSession()
         {
-            SelectedMap = forestThreeLanes;
+            SelectedMap = pixelFrontlineThreeLanes;
             Difficulty = GameDifficulty.Normal;
         }
 
@@ -159,7 +159,7 @@ namespace WarOfEras.Battle.Core
 
         public static void SelectMap(BattleMapDefinition map)
         {
-            SelectedMap = map ?? forestThreeLanes;
+            SelectedMap = map ?? pixelFrontlineThreeLanes;
         }
 
         public static void SelectDifficulty(GameDifficulty difficulty)

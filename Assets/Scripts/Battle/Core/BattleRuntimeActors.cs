@@ -1,0 +1,744 @@
+using UnityEngine;
+
+namespace WarOfEras.Battle.Core
+{
+    public sealed class UnitDefinition
+    {
+        public UnitDefinition(
+            string displayName,
+            string key,
+            int cost,
+            float maxHealth,
+            float damage,
+            float speed,
+            float attackRange,
+            float attackInterval,
+            float scale,
+            int reward,
+            Sprite[] moveFrames,
+            Sprite[] attackFrames,
+            Color tint)
+        {
+            DisplayName = displayName;
+            Key = key;
+            Cost = cost;
+            MaxHealth = maxHealth;
+            Damage = damage;
+            Speed = speed;
+            AttackRange = attackRange;
+            AttackInterval = attackInterval;
+            Scale = scale;
+            Reward = reward;
+            MoveFrames = moveFrames;
+            AttackFrames = attackFrames;
+            Tint = tint;
+        }
+
+        public string DisplayName { get; }
+        public string Key { get; }
+        public int Cost { get; }
+        public float MaxHealth { get; }
+        public float Damage { get; }
+        public float Speed { get; }
+        public float AttackRange { get; }
+        public float AttackInterval { get; }
+        public float Scale { get; }
+        public int Reward { get; }
+        public Sprite[] MoveFrames { get; }
+        public Sprite[] AttackFrames { get; }
+        public Color Tint { get; }
+    }
+
+    public sealed class BattleTimedDestroy : MonoBehaviour
+    {
+        private float remaining = 1f;
+
+        public void Configure(float duration)
+        {
+            remaining = Mathf.Max(0.05f, duration);
+        }
+
+        private void Update()
+        {
+            remaining -= Time.deltaTime;
+            if (remaining <= 0f)
+            {
+                Destroy(gameObject);
+            }
+        }
+    }
+
+    public sealed class BattleVfxFade : MonoBehaviour
+    {
+        private SpriteRenderer spriteRenderer;
+        private LineRenderer lineRenderer;
+        private Vector3 initialScale;
+        private Color initialSpriteColor;
+        private Color initialLineStartColor;
+        private Color initialLineEndColor;
+        private float initialLineWidth;
+        private float duration = 1f;
+        private float elapsed;
+        private float expandRate;
+        private float rotationSpeed;
+
+        public void Configure(float effectDuration, float scaleExpansion, float degreesPerSecond)
+        {
+            duration = Mathf.Max(0.05f, effectDuration);
+            expandRate = scaleExpansion;
+            rotationSpeed = degreesPerSecond;
+            spriteRenderer = GetComponent<SpriteRenderer>();
+            lineRenderer = GetComponent<LineRenderer>();
+            initialScale = transform.localScale;
+
+            if (spriteRenderer != null)
+            {
+                initialSpriteColor = spriteRenderer.color;
+            }
+
+            if (lineRenderer != null)
+            {
+                initialLineStartColor = lineRenderer.startColor;
+                initialLineEndColor = lineRenderer.endColor;
+                initialLineWidth = lineRenderer.widthMultiplier;
+            }
+        }
+
+        private void Update()
+        {
+            elapsed += Time.deltaTime;
+            var t = Mathf.Clamp01(elapsed / duration);
+            var alpha = 1f - t;
+
+            if (expandRate != 0f)
+            {
+                transform.localScale = initialScale * (1f + expandRate * t);
+            }
+
+            if (rotationSpeed != 0f)
+            {
+                transform.Rotate(0f, 0f, rotationSpeed * Time.deltaTime);
+            }
+
+            if (spriteRenderer != null)
+            {
+                var color = initialSpriteColor;
+                color.a *= alpha;
+                spriteRenderer.color = color;
+            }
+
+            if (lineRenderer != null)
+            {
+                var start = initialLineStartColor;
+                var end = initialLineEndColor;
+                start.a *= alpha;
+                end.a *= alpha;
+                lineRenderer.startColor = start;
+                lineRenderer.endColor = end;
+                lineRenderer.widthMultiplier = initialLineWidth * Mathf.Lerp(1f, 0.45f, t);
+            }
+
+            if (elapsed >= duration)
+            {
+                Destroy(gameObject);
+            }
+        }
+    }
+
+    public sealed class BattleBuildPromptPulse : MonoBehaviour
+    {
+        private SpriteRenderer spriteRenderer;
+        private Vector3 baseScale;
+        private Color baseColor;
+        private float minScale = 0.85f;
+        private float maxScale = 1.15f;
+        private float pulseSpeed = 2.4f;
+
+        public void Configure(float minimumScale, float maximumScale, float speed)
+        {
+            minScale = minimumScale;
+            maxScale = maximumScale;
+            pulseSpeed = speed;
+            baseScale = transform.localScale;
+            spriteRenderer = GetComponent<SpriteRenderer>();
+            baseColor = spriteRenderer != null ? spriteRenderer.color : Color.white;
+        }
+
+        private void Update()
+        {
+            if (baseScale == Vector3.zero)
+            {
+                baseScale = transform.localScale;
+            }
+
+            var wave = (Mathf.Sin(Time.time * pulseSpeed) + 1f) * 0.5f;
+            transform.localScale = baseScale * Mathf.Lerp(minScale, maxScale, wave);
+
+            if (spriteRenderer != null)
+            {
+                var color = baseColor;
+                color.a = baseColor.a * Mathf.Lerp(0.68f, 1f, wave);
+                spriteRenderer.color = color;
+            }
+        }
+    }
+
+    public sealed class TowerDefinition
+    {
+        public TowerDefinition(string displayName, int cost, float damage, float attackInterval, float range, Color tint)
+        {
+            DisplayName = displayName;
+            Cost = cost;
+            Damage = damage;
+            AttackInterval = attackInterval;
+            Range = range;
+            Tint = tint;
+        }
+
+        public string DisplayName { get; }
+        public int Cost { get; }
+        public float Damage { get; }
+        public float AttackInterval { get; }
+        public float Range { get; }
+        public Color Tint { get; }
+    }
+
+    public sealed class AgePowerDefinition
+    {
+        public AgePowerDefinition(string displayName, float cooldown, float damage, bool isGlobal, float statusDuration, float speedMultiplier, float attackIntervalMultiplier)
+        {
+            DisplayName = displayName;
+            Cooldown = cooldown;
+            Damage = damage;
+            IsGlobal = isGlobal;
+            StatusDuration = statusDuration;
+            SpeedMultiplier = speedMultiplier;
+            AttackIntervalMultiplier = attackIntervalMultiplier;
+        }
+
+        public string DisplayName { get; }
+        public float Cooldown { get; }
+        public float Damage { get; }
+        public bool IsGlobal { get; }
+        public float StatusDuration { get; }
+        public float SpeedMultiplier { get; }
+        public float AttackIntervalMultiplier { get; }
+    }
+
+    public sealed class BattleUnit : MonoBehaviour
+    {
+        private const float AttackImpulseDuration = 0.18f;
+        private const float HitReactionDuration = 0.22f;
+
+        private BattleGameController controller;
+        private Transform visualRoot;
+        private SpriteRenderer spriteRenderer;
+        private SpriteRenderer shadowRenderer;
+        private Vector3[] routePoints;
+        private Sprite holdSprite;
+        private float health;
+        private float damage;
+        private float speed;
+        private float attackTimer;
+        private float frameTimer;
+        private float hitFlash;
+        private float attackImpulseTimer;
+        private float hitReactionTimer;
+        private float attackImpulseDirection;
+        private float hitReactionDirection;
+        private float statusTimer;
+        private float statusSpeedMultiplier = 1f;
+        private float statusAttackIntervalMultiplier = 1f;
+        private int frameIndex;
+        private int routeTargetIndex;
+        private bool attacking;
+        private bool stopAtRouteEnd;
+        private bool reachedHoldPoint;
+
+        public UnitDefinition Definition { get; private set; }
+        public int Team { get; private set; }
+        public int LaneIndex { get; private set; }
+        public bool IsAlive => health > 0f;
+
+        public void Configure(
+            BattleGameController owner,
+            UnitDefinition definition,
+            int team,
+            int laneIndex,
+            Vector3 position,
+            float healthMultiplier,
+            float damageMultiplier,
+            float speedMultiplier,
+            Vector3[] customRoute = null,
+            bool stopWhenRouteEnds = false)
+        {
+            controller = owner;
+            Definition = definition;
+            Team = team;
+            LaneIndex = laneIndex;
+            health = definition.MaxHealth * healthMultiplier;
+            damage = definition.Damage * damageMultiplier;
+            speed = definition.Speed * speedMultiplier;
+            var usesCustomRoute = customRoute != null && customRoute.Length > 0;
+            routePoints = usesCustomRoute ? customRoute : owner.GetLaneRoute(laneIndex);
+            routeTargetIndex = team == 0 ? 1 : routePoints.Length - 2;
+            stopAtRouteEnd = stopWhenRouteEnds;
+
+            transform.position = usesCustomRoute ? routePoints[0] : position;
+            transform.localScale = Vector3.one * definition.Scale * owner.UnitVisualScale;
+
+            CreateGroundShadow();
+
+            var visualObject = new GameObject("Unit Visual", typeof(SpriteRenderer));
+            visualObject.transform.SetParent(transform, false);
+            visualRoot = visualObject.transform;
+
+            spriteRenderer = visualObject.GetComponent<SpriteRenderer>();
+            spriteRenderer.sprite = definition.MoveFrames[0];
+            holdSprite = spriteRenderer.sprite;
+            spriteRenderer.flipX = team == 1;
+            spriteRenderer.color = GetBaseTint();
+            UpdateGroundShadow();
+            UpdateSorting();
+        }
+
+        private void Update()
+        {
+            if (controller == null || Definition == null || !IsAlive || controller.IsGameOver)
+            {
+                return;
+            }
+
+            attackTimer -= Time.deltaTime;
+            hitFlash = Mathf.Max(0f, hitFlash - Time.deltaTime);
+            attackImpulseTimer = Mathf.Max(0f, attackImpulseTimer - Time.deltaTime);
+            hitReactionTimer = Mathf.Max(0f, hitReactionTimer - Time.deltaTime);
+            UpdateStatusEffect();
+            attacking = false;
+
+            var target = controller.FindNearestEnemy(this);
+            if (target != null && Vector2.Distance(target.transform.position, transform.position) <= BattleGameController.GetUnitEngageDistance(Definition))
+            {
+                attacking = true;
+                TryAttackUnit(target);
+            }
+            else if (reachedHoldPoint)
+            {
+                attacking = false;
+                HoldPosition();
+            }
+            else if (IsAtEnemyBase())
+            {
+                attacking = true;
+                TryAttackBase();
+            }
+            else
+            {
+                MoveForward();
+            }
+
+            UpdateAnimation();
+            UpdateTint();
+            UpdateVisualPose();
+            UpdateSorting();
+        }
+
+        public void TakeDamage(float amount, int attackerTeam)
+        {
+            if (!IsAlive)
+            {
+                return;
+            }
+
+            health -= amount;
+            hitFlash = 0.22f;
+            hitReactionTimer = HitReactionDuration;
+            hitReactionDirection = attackerTeam == 0 ? 1f : -1f;
+
+            if (health <= 0f)
+            {
+                controller.NotifyUnitKilled(this, attackerTeam);
+                Destroy(gameObject);
+            }
+        }
+
+        public void ApplyStatusEffect(float duration, float speedMultiplier, float attackIntervalMultiplier)
+        {
+            if (!IsAlive || duration <= 0f)
+            {
+                return;
+            }
+
+            statusTimer = Mathf.Max(statusTimer, duration);
+            statusSpeedMultiplier = Mathf.Min(statusSpeedMultiplier, speedMultiplier);
+            statusAttackIntervalMultiplier = Mathf.Max(statusAttackIntervalMultiplier, attackIntervalMultiplier);
+            hitFlash = Mathf.Max(hitFlash, 0.18f);
+        }
+
+        private void UpdateStatusEffect()
+        {
+            if (statusTimer <= 0f)
+            {
+                return;
+            }
+
+            statusTimer = Mathf.Max(0f, statusTimer - Time.deltaTime);
+            if (statusTimer <= 0f)
+            {
+                statusSpeedMultiplier = 1f;
+                statusAttackIntervalMultiplier = 1f;
+            }
+        }
+
+        private void TryAttackUnit(BattleUnit target)
+        {
+            if (attackTimer > 0f)
+            {
+                return;
+            }
+
+            attackImpulseTimer = AttackImpulseDuration;
+            attackImpulseDirection = Team == 0 ? 1f : -1f;
+            var hitPosition = Vector3.Lerp(transform.position, target.transform.position, 0.58f);
+            controller.SpawnCombatHitEffect(hitPosition, Team, Definition.AttackRange > 1.3f);
+            target.TakeDamage(damage, Team);
+            attackTimer = Definition.AttackInterval * statusAttackIntervalMultiplier;
+        }
+
+        private void TryAttackBase()
+        {
+            if (attackTimer > 0f)
+            {
+                return;
+            }
+
+            attackImpulseTimer = AttackImpulseDuration;
+            attackImpulseDirection = Team == 0 ? 1f : -1f;
+            var basePosition = controller.GetBasePosition(Team == 0 ? 1 : 0);
+            controller.SpawnCombatHitEffect(new Vector3(basePosition.x, transform.position.y, 0f), Team, Definition.AttackRange > 1.3f);
+            controller.DamageBase(Team == 0 ? 1 : 0, damage);
+            attackTimer = Definition.AttackInterval * statusAttackIntervalMultiplier;
+        }
+
+        private void MoveForward()
+        {
+            if (routePoints == null || routePoints.Length == 0 || routeTargetIndex < 0 || routeTargetIndex >= routePoints.Length)
+            {
+                var direction = Team == 0 ? 1f : -1f;
+                transform.position += new Vector3(direction * speed * statusSpeedMultiplier * Time.deltaTime, 0f, 0f);
+                return;
+            }
+
+            var target = routePoints[routeTargetIndex];
+            transform.position = Vector3.MoveTowards(transform.position, target, speed * statusSpeedMultiplier * Time.deltaTime);
+
+            if (Vector3.Distance(transform.position, target) <= 0.025f)
+            {
+                routeTargetIndex += Team == 0 ? 1 : -1;
+                if (stopAtRouteEnd && (routeTargetIndex >= routePoints.Length || routeTargetIndex < 0))
+                {
+                    reachedHoldPoint = true;
+                    holdSprite = spriteRenderer != null ? spriteRenderer.sprite : holdSprite;
+                }
+            }
+        }
+
+        private void HoldPosition()
+        {
+            if (spriteRenderer != null && holdSprite != null)
+            {
+                spriteRenderer.sprite = holdSprite;
+            }
+        }
+
+        private bool IsAtEnemyBase()
+        {
+            if (stopAtRouteEnd)
+            {
+                return false;
+            }
+
+            if (routePoints != null && routePoints.Length > 0)
+            {
+                return Team == 0 ? routeTargetIndex >= routePoints.Length : routeTargetIndex < 0;
+            }
+
+            var targetBase = controller.GetBasePosition(Team == 0 ? 1 : 0);
+            return Team == 0
+                ? transform.position.x >= targetBase.x - 0.55f
+                : transform.position.x <= targetBase.x + 0.55f;
+        }
+
+        private void UpdateAnimation()
+        {
+            var frames = attacking && Definition.AttackFrames.Length > 0 ? Definition.AttackFrames : Definition.MoveFrames;
+            if (reachedHoldPoint && !attacking)
+            {
+                HoldPosition();
+                return;
+            }
+
+            if (frames.Length == 0)
+            {
+                return;
+            }
+
+            frameTimer += Time.deltaTime;
+            var frameDuration = attacking ? 0.11f : 0.16f;
+            if (frameTimer < frameDuration)
+            {
+                return;
+            }
+
+            frameTimer = 0f;
+            frameIndex = (frameIndex + 1) % frames.Length;
+            spriteRenderer.sprite = frames[frameIndex];
+            UpdateGroundShadow();
+        }
+
+        private void UpdateTint()
+        {
+            var baseColor = GetBaseTint();
+            spriteRenderer.color = hitFlash > 0f ? Color.Lerp(baseColor, Color.red, 0.55f) : baseColor;
+        }
+
+        private void UpdateVisualPose()
+        {
+            if (visualRoot == null)
+            {
+                return;
+            }
+
+            var parentScale = Mathf.Max(0.01f, transform.localScale.x);
+            var localOffset = Vector3.zero;
+            var rotation = 0f;
+
+            if (attackImpulseTimer > 0f)
+            {
+                var pulse = Mathf.Sin((attackImpulseTimer / AttackImpulseDuration) * Mathf.PI);
+                localOffset.x += attackImpulseDirection * pulse * 0.12f / parentScale;
+                rotation += attackImpulseDirection * pulse * -3.5f;
+            }
+
+            if (hitReactionTimer > 0f)
+            {
+                var pulse = Mathf.Sin((hitReactionTimer / HitReactionDuration) * Mathf.PI);
+                localOffset.x += hitReactionDirection * pulse * 0.08f / parentScale;
+                localOffset.y += pulse * 0.03f / parentScale;
+                rotation += hitReactionDirection * pulse * 4.5f;
+            }
+
+            visualRoot.localPosition = localOffset;
+            visualRoot.localRotation = Quaternion.Euler(0f, 0f, rotation);
+        }
+
+        private Color GetBaseTint()
+        {
+            var tint = Definition != null ? Definition.Tint : Color.white;
+            if (Team == 1)
+            {
+                tint = Color.Lerp(tint, new Color(1f, 0.5f, 0.42f, 1f), 0.35f);
+            }
+
+            if (statusTimer > 0f)
+            {
+                tint = Color.Lerp(tint, new Color(0.55f, 0.9f, 1f, 1f), 0.25f);
+            }
+
+            return tint;
+        }
+
+        private void CreateGroundShadow()
+        {
+            var shadowObject = new GameObject("Ground Shadow", typeof(SpriteRenderer));
+            shadowObject.transform.SetParent(transform, false);
+
+            shadowRenderer = shadowObject.GetComponent<SpriteRenderer>();
+            shadowRenderer.sprite = BattleGameController.SharedWhiteSprite;
+            shadowRenderer.color = new Color(0.03f, 0.025f, 0.018f, 0.32f);
+        }
+
+        private void UpdateGroundShadow()
+        {
+            if (shadowRenderer == null || spriteRenderer == null || spriteRenderer.sprite == null)
+            {
+                return;
+            }
+
+            var parentScale = Mathf.Max(0.01f, transform.localScale.x);
+            var spriteBounds = spriteRenderer.sprite.bounds;
+            var worldWidth = Mathf.Clamp(spriteBounds.size.x * transform.localScale.x * 0.68f, 0.36f, 0.95f);
+            shadowRenderer.transform.localScale = new Vector3(worldWidth / parentScale, 0.1f / parentScale, 1f);
+            shadowRenderer.transform.localPosition = new Vector3(0f, -spriteBounds.extents.y + 0.08f / parentScale, 0f);
+        }
+
+        private void UpdateSorting()
+        {
+            if (spriteRenderer == null)
+            {
+                return;
+            }
+
+            var order = 30 + Mathf.RoundToInt((4.5f - transform.position.y) * 10f);
+            spriteRenderer.sortingOrder = order + Team;
+            if (shadowRenderer != null)
+            {
+                shadowRenderer.sortingOrder = order - 1;
+            }
+        }
+    }
+
+    public sealed class BattleTower : MonoBehaviour
+    {
+        private BattleGameController controller;
+        private SpriteRenderer spriteRenderer;
+        private SpriteRenderer shadowRenderer;
+        private Sprite[] frames;
+        private TowerDefinition definition;
+        private float attackTimer;
+        private float frameTimer;
+        private int laneIndex;
+        private int team;
+        private int towerTypeIndex;
+        private int frameIndex;
+
+        public int TowerTypeIndex => towerTypeIndex;
+
+        public void Configure(BattleGameController owner, int lane, int towerTeam, int typeIndex, TowerDefinition towerDefinition, Sprite[] towerFrames)
+        {
+            controller = owner;
+            laneIndex = lane;
+            team = towerTeam;
+            towerTypeIndex = Mathf.Max(0, typeIndex);
+            definition = towerDefinition;
+            frames = towerFrames;
+
+            transform.localScale = Vector3.one * owner.TowerVisualScale;
+            CreateGroundShadow();
+
+            spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
+            spriteRenderer.sprite = frames != null && frames.Length > 0 ? frames[0] : null;
+            spriteRenderer.color = definition != null ? definition.Tint : new Color(1f, 0.94f, 0.78f, 1f);
+            spriteRenderer.flipX = team == 1;
+            if (team == 1)
+            {
+                spriteRenderer.color = Color.Lerp(spriteRenderer.color, new Color(1f, 0.42f, 0.32f, 1f), 0.38f);
+            }
+
+            UpdateGroundShadow();
+            UpdateSorting();
+        }
+
+        public void RefreshVisuals(TowerDefinition towerDefinition, Sprite[] towerFrames)
+        {
+            definition = towerDefinition;
+            frames = towerFrames;
+            frameIndex = 0;
+            frameTimer = 0f;
+
+            if (spriteRenderer == null)
+            {
+                return;
+            }
+
+            spriteRenderer.sprite = frames != null && frames.Length > 0 ? frames[0] : null;
+            spriteRenderer.color = definition != null ? definition.Tint : new Color(1f, 0.94f, 0.78f, 1f);
+            spriteRenderer.flipX = team == 1;
+            if (team == 1)
+            {
+                spriteRenderer.color = Color.Lerp(spriteRenderer.color, new Color(1f, 0.42f, 0.32f, 1f), 0.38f);
+            }
+
+            UpdateGroundShadow();
+            UpdateSorting();
+        }
+
+        private void Update()
+        {
+            if (controller == null || controller.IsGameOver)
+            {
+                return;
+            }
+
+            attackTimer -= Time.deltaTime;
+            Animate();
+
+            if (attackTimer > 0f)
+            {
+                return;
+            }
+
+            var range = definition != null ? definition.Range : 3.4f;
+            var target = controller.FindTowerTarget(team, laneIndex, transform.position, range);
+            if (target == null)
+            {
+                return;
+            }
+
+            var damage = definition != null ? definition.Damage : 34f;
+            var interval = definition != null ? definition.AttackInterval : 1.05f;
+            var multiplier = team == 0 ? controller.TowerDamageMultiplier : 1f;
+            controller.SpawnCombatHitEffect(target.transform.position, team, true);
+            target.TakeDamage(damage * multiplier, team);
+            attackTimer = interval;
+        }
+
+        private void Animate()
+        {
+            if (frames == null || frames.Length == 0)
+            {
+                return;
+            }
+
+            frameTimer += Time.deltaTime;
+            if (frameTimer < 0.16f)
+            {
+                return;
+            }
+
+            frameTimer = 0f;
+            frameIndex = (frameIndex + 1) % frames.Length;
+            spriteRenderer.sprite = frames[frameIndex];
+            UpdateGroundShadow();
+        }
+
+        private void CreateGroundShadow()
+        {
+            var shadowObject = new GameObject("Tower Shadow", typeof(SpriteRenderer));
+            shadowObject.transform.SetParent(transform, false);
+
+            shadowRenderer = shadowObject.GetComponent<SpriteRenderer>();
+            shadowRenderer.sprite = BattleGameController.SharedWhiteSprite;
+            shadowRenderer.color = new Color(0.025f, 0.02f, 0.015f, 0.28f);
+        }
+
+        private void UpdateGroundShadow()
+        {
+            if (shadowRenderer == null || spriteRenderer == null || spriteRenderer.sprite == null)
+            {
+                return;
+            }
+
+            var parentScale = Mathf.Max(0.01f, transform.localScale.x);
+            var spriteBounds = spriteRenderer.sprite.bounds;
+            var worldWidth = Mathf.Clamp(spriteBounds.size.x * transform.localScale.x * 0.72f, 0.65f, 1.35f);
+            shadowRenderer.transform.localScale = new Vector3(worldWidth / parentScale, 0.16f / parentScale, 1f);
+            shadowRenderer.transform.localPosition = new Vector3(0f, -spriteBounds.extents.y + 0.12f / parentScale, 0f);
+        }
+
+        private void UpdateSorting()
+        {
+            if (spriteRenderer == null)
+            {
+                return;
+            }
+
+            var order = 24 + Mathf.RoundToInt((4.5f - transform.position.y) * 10f);
+            spriteRenderer.sortingOrder = order;
+            if (shadowRenderer != null)
+            {
+                shadowRenderer.sortingOrder = order - 1;
+            }
+        }
+    }
+}

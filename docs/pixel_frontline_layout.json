@@ -1,0 +1,559 @@
+{
+  "map": {
+    "width": 2400,
+    "height": 1350,
+    "pixelsPerUnit": 55,
+    "resourcePath": "Battle/Maps/PixelFrontline_Barbarian"
+  },
+  "eraMaps": {
+    "Barbarian": {
+      "display": "蛮荒部落",
+      "resourcePath": "Battle/Maps/PixelFrontline_Barbarian",
+      "theme": "barbarian"
+    },
+    "Machine": {
+      "display": "机械工坊",
+      "resourcePath": "Battle/Maps/PixelFrontline_Machine",
+      "theme": "machine"
+    },
+    "Electric": {
+      "display": "电力时代",
+      "resourcePath": "Battle/Maps/PixelFrontline_Electric",
+      "theme": "electric"
+    },
+    "Nuclear": {
+      "display": "核能纪元",
+      "resourcePath": "Battle/Maps/PixelFrontline_Nuclear",
+      "theme": "nuclear"
+    },
+    "Starsea": {
+      "display": "星海文明",
+      "resourcePath": "Battle/Maps/PixelFrontline_Starsea",
+      "theme": "starsea"
+    }
+  },
+  "lanes": [
+    [
+      {
+        "pixel": [
+          190,
+          675
+        ],
+        "world": [
+          -18.363636,
+          0.0
+        ]
+      },
+      {
+        "pixel": [
+          305,
+          560
+        ],
+        "world": [
+          -16.272727,
+          2.090909
+        ]
+      },
+      {
+        "pixel": [
+          430,
+          440
+        ],
+        "world": [
+          -14.0,
+          4.272727
+        ]
+      },
+      {
+        "pixel": [
+          690,
+          390
+        ],
+        "world": [
+          -9.272727,
+          5.181818
+        ]
+      },
+      {
+        "pixel": [
+          1015,
+          390
+        ],
+        "world": [
+          -3.363636,
+          5.181818
+        ]
+      },
+      {
+        "pixel": [
+          1230,
+          390
+        ],
+        "world": [
+          0.545455,
+          5.181818
+        ]
+      },
+      {
+        "pixel": [
+          1485,
+          410
+        ],
+        "world": [
+          5.181818,
+          4.818182
+        ]
+      },
+      {
+        "pixel": [
+          1780,
+          395
+        ],
+        "world": [
+          10.545455,
+          5.090909
+        ]
+      },
+      {
+        "pixel": [
+          2070,
+          465
+        ],
+        "world": [
+          15.818182,
+          3.818182
+        ]
+      },
+      {
+        "pixel": [
+          2210,
+          675
+        ],
+        "world": [
+          18.363636,
+          0.0
+        ]
+      }
+    ],
+    [
+      {
+        "pixel": [
+          190,
+          675
+        ],
+        "world": [
+          -18.363636,
+          0.0
+        ]
+      },
+      {
+        "pixel": [
+          430,
+          675
+        ],
+        "world": [
+          -14.0,
+          0.0
+        ]
+      },
+      {
+        "pixel": [
+          700,
+          675
+        ],
+        "world": [
+          -9.090909,
+          0.0
+        ]
+      },
+      {
+        "pixel": [
+          975,
+          675
+        ],
+        "world": [
+          -4.090909,
+          0.0
+        ]
+      },
+      {
+        "pixel": [
+          1200,
+          675
+        ],
+        "world": [
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "pixel": [
+          1425,
+          675
+        ],
+        "world": [
+          4.090909,
+          0.0
+        ]
+      },
+      {
+        "pixel": [
+          1700,
+          675
+        ],
+        "world": [
+          9.090909,
+          0.0
+        ]
+      },
+      {
+        "pixel": [
+          1970,
+          675
+        ],
+        "world": [
+          14.0,
+          0.0
+        ]
+      },
+      {
+        "pixel": [
+          2210,
+          675
+        ],
+        "world": [
+          18.363636,
+          0.0
+        ]
+      }
+    ],
+    [
+      {
+        "pixel": [
+          190,
+          675
+        ],
+        "world": [
+          -18.363636,
+          0.0
+        ]
+      },
+      {
+        "pixel": [
+          305,
+          790
+        ],
+        "world": [
+          -16.272727,
+          -2.090909
+        ]
+      },
+      {
+        "pixel": [
+          455,
+          930
+        ],
+        "world": [
+          -13.545455,
+          -4.636364
+        ]
+      },
+      {
+        "pixel": [
+          725,
+          965
+        ],
+        "world": [
+          -8.636364,
+          -5.272727
+        ]
+      },
+      {
+        "pixel": [
+          1045,
+          950
+        ],
+        "world": [
+          -2.818182,
+          -5.0
+        ]
+      },
+      {
+        "pixel": [
+          1230,
+          960
+        ],
+        "world": [
+          0.545455,
+          -5.181818
+        ]
+      },
+      {
+        "pixel": [
+          1510,
+          940
+        ],
+        "world": [
+          5.636364,
+          -4.818182
+        ]
+      },
+      {
+        "pixel": [
+          1810,
+          960
+        ],
+        "world": [
+          11.090909,
+          -5.181818
+        ]
+      },
+      {
+        "pixel": [
+          2070,
+          875
+        ],
+        "world": [
+          15.818182,
+          -3.636364
+        ]
+      },
+      {
+        "pixel": [
+          2210,
+          675
+        ],
+        "world": [
+          18.363636,
+          0.0
+        ]
+      }
+    ]
+  ],
+  "connectorNodes": {
+    "LeftUpperCut": {
+      "pixel": [
+        735,
+        530
+      ],
+      "world": [
+        -8.454545,
+        2.636364
+      ]
+    },
+    "LeftLowerCut": {
+      "pixel": [
+        735,
+        815
+      ],
+      "world": [
+        -8.454545,
+        -2.545455
+      ]
+    },
+    "CenterUpperCut": {
+      "pixel": [
+        1200,
+        525
+      ],
+      "world": [
+        0.0,
+        2.727273
+      ]
+    },
+    "CenterLowerCut": {
+      "pixel": [
+        1200,
+        825
+      ],
+      "world": [
+        0.0,
+        -2.727273
+      ]
+    },
+    "RightUpperCut": {
+      "pixel": [
+        1660,
+        535
+      ],
+      "world": [
+        8.363636,
+        2.545455
+      ]
+    },
+    "RightLowerCut": {
+      "pixel": [
+        1660,
+        815
+      ],
+      "world": [
+        8.363636,
+        -2.545455
+      ]
+    }
+  },
+  "bases": {
+    "PlayerBasePoint": {
+      "pixel": [
+        190,
+        675
+      ],
+      "world": [
+        -18.363636,
+        0.0
+      ]
+    },
+    "EnemyBasePoint": {
+      "pixel": [
+        2210,
+        675
+      ],
+      "world": [
+        18.363636,
+        0.0
+      ]
+    }
+  },
+  "towerSlots": {
+    "PlayerTowerSlot_0": {
+      "pixel": [
+        445,
+        430
+      ],
+      "world": [
+        -13.727273,
+        4.454545
+      ]
+    },
+    "PlayerTowerSlot_1": {
+      "pixel": [
+        405,
+        675
+      ],
+      "world": [
+        -14.454545,
+        0.0
+      ]
+    },
+    "PlayerTowerSlot_2": {
+      "pixel": [
+        445,
+        920
+      ],
+      "world": [
+        -13.727273,
+        -4.454545
+      ]
+    },
+    "EnemyTowerSlot_0": {
+      "pixel": [
+        1955,
+        430
+      ],
+      "world": [
+        13.727273,
+        4.454545
+      ]
+    },
+    "EnemyTowerSlot_1": {
+      "pixel": [
+        1995,
+        675
+      ],
+      "world": [
+        14.454545,
+        0.0
+      ]
+    },
+    "EnemyTowerSlot_2": {
+      "pixel": [
+        1955,
+        920
+      ],
+      "world": [
+        13.727273,
+        -4.454545
+      ]
+    }
+  },
+  "resourceWells": {
+    "PlayerWellSlot_0": {
+      "pixel": [
+        830,
+        545
+      ],
+      "world": [
+        -6.727273,
+        2.363636
+      ]
+    },
+    "PlayerWellSlot_1": {
+      "pixel": [
+        830,
+        805
+      ],
+      "world": [
+        -6.727273,
+        -2.363636
+      ]
+    },
+    "EnemyWellSlot_0": {
+      "pixel": [
+        1570,
+        545
+      ],
+      "world": [
+        6.727273,
+        2.363636
+      ]
+    },
+    "EnemyWellSlot_1": {
+      "pixel": [
+        1570,
+        805
+      ],
+      "world": [
+        6.727273,
+        -2.363636
+      ]
+    }
+  },
+  "neutralPoints": {
+    "CentralCrossroads": {
+      "pixel": [
+        1200,
+        675
+      ],
+      "world": [
+        0.0,
+        0.0
+      ]
+    },
+    "NorthBridge": {
+      "pixel": [
+        1200,
+        390
+      ],
+      "world": [
+        0.0,
+        5.181818
+      ]
+    },
+    "SouthBridge": {
+      "pixel": [
+        1230,
+        960
+      ],
+      "world": [
+        0.545455,
+        -5.181818
+      ]
+    }
+  },
+  "scaleRules": {
+    "unitVisualScale": 0.72,
+    "baseVisualScale": 0.28,
+    "towerVisualScale": 0.22,
+    "resourceWellVisualScale": 0.22
+  }
+}

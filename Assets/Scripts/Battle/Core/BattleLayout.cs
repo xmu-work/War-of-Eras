@@ -5,10 +5,10 @@ namespace WarOfEras.Battle.Core
 {
     public sealed class BattleLayout : MonoBehaviour
     {
-        [SerializeField] private float unitVisualScale = 0.72f;
+        [SerializeField] private float unitVisualScale = 0.62f;
         [SerializeField] private float baseVisualScale = 0.28f;
-        [SerializeField] private float towerVisualScale = 0.22f;
-        [SerializeField] private float resourceWellVisualScale = 0.22f;
+        [SerializeField] private float towerVisualScale = 0.16f;
+        [SerializeField] private float resourceWellVisualScale = 0.18f;
 
         private readonly List<string> validationErrors = new List<string>();
 
@@ -72,8 +72,8 @@ namespace WarOfEras.Battle.Core
             RequireMarker("Layout/Bases/EnemyBasePoint");
             RequireCount("player tower slots", GetPlayerTowerPositions(), 3);
             RequireCount("enemy tower slots", GetEnemyTowerPositions(), 3);
-            RequireCount("player resource well slots", GetPlayerResourceWellPositions(), 2);
-            RequireCount("enemy resource well slots", GetEnemyResourceWellPositions(), 2);
+            RequireCount("player resource well slots", GetPlayerResourceWellPositions(), 1);
+            RequireCount("enemy resource well slots", GetEnemyResourceWellPositions(), 1);
 
             for (var i = 0; i < 3; i++)
             {

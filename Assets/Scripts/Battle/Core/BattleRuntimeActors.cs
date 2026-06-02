@@ -203,6 +203,14 @@ namespace WarOfEras.Battle.Core
         public Color Tint { get; }
     }
 
+    public abstract class BattleFacility : MonoBehaviour
+    {
+        public abstract int Team { get; }
+        public abstract bool IsAlive { get; }
+        public virtual Vector3 CenterPosition => transform.position;
+        public abstract void TakeDamage(float amount, int attackerTeam);
+    }
+
     public sealed class AgePowerDefinition
     {
         public AgePowerDefinition(string displayName, float cooldown, float damage, bool isGlobal, float statusDuration, float speedMultiplier, float attackIntervalMultiplier)
@@ -322,19 +330,29 @@ namespace WarOfEras.Battle.Core
                 attacking = true;
                 TryAttackUnit(target);
             }
-            else if (reachedHoldPoint)
-            {
-                attacking = false;
-                HoldPosition();
-            }
-            else if (IsAtEnemyBase())
-            {
-                attacking = true;
-                TryAttackBase();
-            }
             else
             {
-                MoveForward();
+                var facilityTarget = controller.FindNearestEnemyFacility(this);
+                if (facilityTarget != null
+                    && Vector2.Distance(facilityTarget.CenterPosition, transform.position) <= Mathf.Max(BattleGameController.GetUnitEngageDistance(Definition), 1.55f))
+                {
+                    attacking = true;
+                    TryAttackFacility(facilityTarget);
+                }
+                else if (reachedHoldPoint)
+                {
+                    attacking = false;
+                    HoldPosition();
+                }
+                else if (IsAtEnemyBase())
+                {
+                    attacking = true;
+                    TryAttackBase();
+                }
+                else
+                {
+                    MoveForward();
+                }
             }
 
             UpdateAnimation();
@@ -375,6 +393,27 @@ namespace WarOfEras.Battle.Core
             hitFlash = Mathf.Max(hitFlash, 0.18f);
         }
 
+        public void RedirectToRoute(int laneIndex, Vector3[] customRoute, bool stopWhenRouteEnds)
+        {
+            if (!IsAlive || customRoute == null || customRoute.Length == 0)
+            {
+                return;
+            }
+
+            var redirectedRoute = new Vector3[customRoute.Length + 1];
+            redirectedRoute[0] = transform.position;
+            for (var i = 0; i < customRoute.Length; i++)
+            {
+                redirectedRoute[i + 1] = customRoute[i];
+            }
+
+            LaneIndex = laneIndex;
+            routePoints = redirectedRoute;
+            routeTargetIndex = 1;
+            stopAtRouteEnd = stopWhenRouteEnds;
+            reachedHoldPoint = false;
+        }
+
         private void UpdateStatusEffect()
         {
             if (statusTimer <= 0f)
@@ -400,6 +439,21 @@ namespace WarOfEras.Battle.Core
             attackImpulseTimer = AttackImpulseDuration;
             attackImpulseDirection = Team == 0 ? 1f : -1f;
             var hitPosition = Vector3.Lerp(transform.position, target.transform.position, 0.58f);
+            controller.SpawnCombatHitEffect(hitPosition, Team, Definition.AttackRange > 1.3f);
+            target.TakeDamage(damage, Team);
+            attackTimer = Definition.AttackInterval * statusAttackIntervalMultiplier;
+        }
+
+        private void TryAttackFacility(BattleFacility target)
+        {
+            if (attackTimer > 0f || target == null || !target.IsAlive)
+            {
+                return;
+            }
+
+            attackImpulseTimer = AttackImpulseDuration;
+            attackImpulseDirection = Team == 0 ? 1f : -1f;
+            var hitPosition = Vector3.Lerp(transform.position, target.CenterPosition, 0.58f);
             controller.SpawnCombatHitEffect(hitPosition, Team, Definition.AttackRange > 1.3f);
             target.TakeDamage(damage, Team);
             attackTimer = Definition.AttackInterval * statusAttackIntervalMultiplier;
@@ -588,30 +642,38 @@ namespace WarOfEras.Battle.Core
         }
     }
 
-    public sealed class BattleTower : MonoBehaviour
+    public sealed class BattleTower : BattleFacility
     {
         private BattleGameController controller;
         private SpriteRenderer spriteRenderer;
         private SpriteRenderer shadowRenderer;
         private Sprite[] frames;
         private TowerDefinition definition;
+        private float health;
         private float attackTimer;
         private float frameTimer;
         private int laneIndex;
         private int team;
+        private int slotIndex;
         private int towerTypeIndex;
         private int frameIndex;
 
+        public override int Team => team;
+        public int SlotIndex => slotIndex;
         public int TowerTypeIndex => towerTypeIndex;
+        public override bool IsAlive => health > 0f;
+        public override Vector3 CenterPosition => transform.position + new Vector3(0f, 0.18f, 0f);
 
-        public void Configure(BattleGameController owner, int lane, int towerTeam, int typeIndex, TowerDefinition towerDefinition, Sprite[] towerFrames)
+        public void Configure(BattleGameController owner, int lane, int towerTeam, int facilitySlotIndex, int typeIndex, TowerDefinition towerDefinition, Sprite[] towerFrames)
         {
             controller = owner;
             laneIndex = lane;
             team = towerTeam;
+            slotIndex = facilitySlotIndex;
             towerTypeIndex = Mathf.Max(0, typeIndex);
             definition = towerDefinition;
             frames = towerFrames;
+            health = GetTowerMaxHealth(towerDefinition);
 
             transform.localScale = Vector3.one * owner.TowerVisualScale;
             CreateGroundShadow();
@@ -627,6 +689,28 @@ namespace WarOfEras.Battle.Core
 
             UpdateGroundShadow();
             UpdateSorting();
+        }
+
+        public override void TakeDamage(float amount, int attackerTeam)
+        {
+            if (!IsAlive)
+            {
+                return;
+            }
+
+            health -= Mathf.Max(0f, amount);
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.color = Color.Lerp(spriteRenderer.color, Color.red, 0.35f);
+            }
+
+            if (health > 0f)
+            {
+                return;
+            }
+
+            controller.NotifyTowerDestroyed(this, attackerTeam);
+            Destroy(gameObject);
         }
 
         public void RefreshVisuals(TowerDefinition towerDefinition, Sprite[] towerFrames)
@@ -655,7 +739,7 @@ namespace WarOfEras.Battle.Core
 
         private void Update()
         {
-            if (controller == null || controller.IsGameOver)
+            if (controller == null || controller.IsGameOver || !IsAlive)
             {
                 return;
             }
@@ -734,6 +818,111 @@ namespace WarOfEras.Battle.Core
             }
 
             var order = 24 + Mathf.RoundToInt((4.5f - transform.position.y) * 10f);
+            spriteRenderer.sortingOrder = order;
+            if (shadowRenderer != null)
+            {
+                shadowRenderer.sortingOrder = order - 1;
+            }
+        }
+
+        private static float GetTowerMaxHealth(TowerDefinition towerDefinition)
+        {
+            if (towerDefinition == null)
+            {
+                return 260f;
+            }
+
+            return 220f + towerDefinition.Damage * 6f + towerDefinition.Range * 20f;
+        }
+    }
+
+    public sealed class BattleResourceWell : BattleFacility
+    {
+        private const float MaxHealth = 360f;
+
+        private BattleGameController controller;
+        private SpriteRenderer spriteRenderer;
+        private SpriteRenderer shadowRenderer;
+        private float health;
+        private int slotIndex;
+        private int team;
+
+        public override int Team => team;
+        public int SlotIndex => slotIndex;
+        public override bool IsAlive => health > 0f;
+        public override Vector3 CenterPosition => transform.position + new Vector3(0f, 0.12f, 0f);
+
+        public void Configure(BattleGameController owner, int facilitySlotIndex, int facilityTeam, Sprite sprite, float visualScale)
+        {
+            controller = owner;
+            slotIndex = facilitySlotIndex;
+            team = facilityTeam;
+            health = MaxHealth;
+            transform.localScale = Vector3.one * visualScale;
+
+            CreateGroundShadow();
+            spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
+            spriteRenderer.sprite = sprite;
+            spriteRenderer.flipX = team == 1;
+            spriteRenderer.color = team == 0 ? Color.white : new Color(1f, 0.72f, 0.62f, 1f);
+            UpdateGroundShadow();
+            UpdateSorting();
+        }
+
+        public override void TakeDamage(float amount, int attackerTeam)
+        {
+            if (!IsAlive)
+            {
+                return;
+            }
+
+            health -= Mathf.Max(0f, amount);
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.color = Color.Lerp(spriteRenderer.color, Color.red, 0.35f);
+            }
+
+            if (health > 0f)
+            {
+                return;
+            }
+
+            controller.NotifyResourceWellDestroyed(this, attackerTeam);
+            Destroy(gameObject);
+        }
+
+        private void CreateGroundShadow()
+        {
+            var shadowObject = new GameObject("Resource Point Shadow", typeof(SpriteRenderer));
+            shadowObject.transform.SetParent(transform, false);
+
+            shadowRenderer = shadowObject.GetComponent<SpriteRenderer>();
+            shadowRenderer.sprite = BattleGameController.SharedWhiteSprite;
+            shadowRenderer.color = new Color(0.025f, 0.02f, 0.015f, 0.24f);
+        }
+
+        private void UpdateGroundShadow()
+        {
+            if (shadowRenderer == null || spriteRenderer == null || spriteRenderer.sprite == null)
+            {
+                return;
+            }
+
+            var parentScale = Mathf.Max(0.01f, transform.localScale.x);
+            var spriteBounds = spriteRenderer.sprite.bounds;
+            var worldWidth = Mathf.Clamp(spriteBounds.size.x * transform.localScale.x * 0.7f, 0.42f, 0.95f);
+            shadowRenderer.transform.localScale = new Vector3(worldWidth / parentScale, 0.12f / parentScale, 1f);
+            shadowRenderer.transform.localPosition = new Vector3(0f, -spriteBounds.extents.y + 0.1f / parentScale, 0f);
+        }
+
+        private void UpdateSorting()
+        {
+            if (spriteRenderer == null)
+            {
+                return;
+            }
+
+            var order = 22 + Mathf.RoundToInt((4.5f - transform.position.y) * 10f);
             spriteRenderer.sortingOrder = order;
             if (shadowRenderer != null)
             {

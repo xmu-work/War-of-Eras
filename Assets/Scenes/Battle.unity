@@ -269,10 +269,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 253654b9e649456f9546c336ef8765d0, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  unitVisualScale: 0.72
+  unitVisualScale: 0.62
   baseVisualScale: 0.28
-  towerVisualScale: 0.22
-  resourceWellVisualScale: 0.22
+  towerVisualScale: 0.16
+  resourceWellVisualScale: 0.18
 --- !u!1 &300000
 GameObject:
   m_ObjectHideFlags: 0

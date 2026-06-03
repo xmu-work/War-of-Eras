@@ -183,6 +183,54 @@ namespace WarOfEras.Battle.Core
         }
     }
 
+    public sealed class BattleClickMarkerPulse : MonoBehaviour
+    {
+        private SpriteRenderer spriteRenderer;
+        private Vector3 baseScale;
+        private Color baseColor;
+        private float duration = 0.7f;
+        private float elapsed;
+        private float minScale = 0.8f;
+        private float maxScale = 1.2f;
+        private float pulseSpeed = 12f;
+
+        public void Configure(float effectDuration, float minimumScale, float maximumScale, float speed)
+        {
+            duration = Mathf.Max(0.05f, effectDuration);
+            minScale = minimumScale;
+            maxScale = maximumScale;
+            pulseSpeed = speed;
+            baseScale = transform.localScale;
+            spriteRenderer = GetComponent<SpriteRenderer>();
+            baseColor = spriteRenderer != null ? spriteRenderer.color : Color.white;
+        }
+
+        private void Update()
+        {
+            if (baseScale == Vector3.zero)
+            {
+                baseScale = transform.localScale;
+            }
+
+            elapsed += Time.deltaTime;
+            var life = Mathf.Clamp01(elapsed / duration);
+            var wave = (Mathf.Sin(elapsed * pulseSpeed) + 1f) * 0.5f;
+            transform.localScale = baseScale * Mathf.Lerp(minScale, maxScale, wave);
+
+            if (spriteRenderer != null)
+            {
+                var color = baseColor;
+                color.a = baseColor.a * (1f - life) * Mathf.Lerp(0.35f, 1f, wave);
+                spriteRenderer.color = color;
+            }
+
+            if (elapsed >= duration)
+            {
+                Destroy(gameObject);
+            }
+        }
+    }
+
     public sealed class TowerDefinition
     {
         public TowerDefinition(string displayName, int cost, float damage, float attackInterval, float range, Color tint)
@@ -242,6 +290,7 @@ namespace WarOfEras.Battle.Core
         private Transform visualRoot;
         private SpriteRenderer spriteRenderer;
         private SpriteRenderer shadowRenderer;
+        private SpriteRenderer selectionRenderer;
         private Vector3[] routePoints;
         private Sprite holdSprite;
         private float health;
@@ -296,6 +345,7 @@ namespace WarOfEras.Battle.Core
             transform.localScale = Vector3.one * definition.Scale * owner.UnitVisualScale;
 
             CreateGroundShadow();
+            CreateSelectionIndicator();
 
             var visualObject = new GameObject("Unit Visual", typeof(SpriteRenderer));
             visualObject.transform.SetParent(transform, false);
@@ -412,6 +462,25 @@ namespace WarOfEras.Battle.Core
             routeTargetIndex = 1;
             stopAtRouteEnd = stopWhenRouteEnds;
             reachedHoldPoint = false;
+        }
+
+        public void SetSelectionVisible(bool visible)
+        {
+            if (selectionRenderer == null)
+            {
+                if (!visible || Team != 0)
+                {
+                    return;
+                }
+
+                CreateSelectionIndicator();
+            }
+
+            selectionRenderer.enabled = visible && Team == 0 && IsAlive;
+            if (selectionRenderer.enabled)
+            {
+                UpdateSelectionIndicator();
+            }
         }
 
         private void UpdateStatusEffect()
@@ -612,6 +681,22 @@ namespace WarOfEras.Battle.Core
             shadowRenderer.color = new Color(0.03f, 0.025f, 0.018f, 0.32f);
         }
 
+        private void CreateSelectionIndicator()
+        {
+            if (selectionRenderer != null || Team != 0)
+            {
+                return;
+            }
+
+            var selectionObject = new GameObject("Selection Ring", typeof(SpriteRenderer));
+            selectionObject.transform.SetParent(transform, false);
+
+            selectionRenderer = selectionObject.GetComponent<SpriteRenderer>();
+            selectionRenderer.sprite = BattleGameController.SharedVfxCircleSprite;
+            selectionRenderer.color = new Color(0.18f, 1f, 0.22f, 0.58f);
+            selectionRenderer.enabled = false;
+        }
+
         private void UpdateGroundShadow()
         {
             if (shadowRenderer == null || spriteRenderer == null || spriteRenderer.sprite == null)
@@ -624,6 +709,21 @@ namespace WarOfEras.Battle.Core
             var worldWidth = Mathf.Clamp(spriteBounds.size.x * transform.localScale.x * 0.68f, 0.36f, 0.95f);
             shadowRenderer.transform.localScale = new Vector3(worldWidth / parentScale, 0.1f / parentScale, 1f);
             shadowRenderer.transform.localPosition = new Vector3(0f, -spriteBounds.extents.y + 0.08f / parentScale, 0f);
+            UpdateSelectionIndicator();
+        }
+
+        private void UpdateSelectionIndicator()
+        {
+            if (selectionRenderer == null || spriteRenderer == null || spriteRenderer.sprite == null)
+            {
+                return;
+            }
+
+            var parentScale = Mathf.Max(0.01f, transform.localScale.x);
+            var spriteBounds = spriteRenderer.sprite.bounds;
+            var worldWidth = Mathf.Clamp(spriteBounds.size.x * transform.localScale.x * 0.9f, 0.48f, 1.12f);
+            selectionRenderer.transform.localScale = new Vector3(worldWidth / parentScale, 0.24f / parentScale, 1f);
+            selectionRenderer.transform.localPosition = new Vector3(0f, -spriteBounds.extents.y + 0.07f / parentScale, 0f);
         }
 
         private void UpdateSorting()
@@ -637,7 +737,12 @@ namespace WarOfEras.Battle.Core
             spriteRenderer.sortingOrder = order + Team;
             if (shadowRenderer != null)
             {
-                shadowRenderer.sortingOrder = order - 1;
+                shadowRenderer.sortingOrder = order - 2;
+            }
+
+            if (selectionRenderer != null)
+            {
+                selectionRenderer.sortingOrder = order - 1;
             }
         }
     }

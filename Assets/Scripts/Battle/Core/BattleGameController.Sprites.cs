@@ -6,6 +6,7 @@ namespace WarOfEras.Battle.Core
     public sealed partial class BattleGameController
     {
         internal static Sprite SharedWhiteSprite => WhiteSprite;
+        internal static Sprite SharedVfxCircleSprite => VfxCircleSprite;
 
         private static Sprite PanelSprite
         {
@@ -56,6 +57,32 @@ namespace WarOfEras.Battle.Core
                 }
 
                 return vfxCircleSprite;
+            }
+        }
+
+        private static Sprite TowerBuildMarkerSprite
+        {
+            get
+            {
+                if (towerBuildMarkerSprite == null)
+                {
+                    towerBuildMarkerSprite = CreateTowerBuildMarkerSprite(128);
+                }
+
+                return towerBuildMarkerSprite;
+            }
+        }
+
+        private static Sprite ResourceWellBuildMarkerSprite
+        {
+            get
+            {
+                if (resourceWellBuildMarkerSprite == null)
+                {
+                    resourceWellBuildMarkerSprite = CreateResourceWellBuildMarkerSprite(128);
+                }
+
+                return resourceWellBuildMarkerSprite;
             }
         }
 
@@ -220,6 +247,153 @@ namespace WarOfEras.Battle.Core
             return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
         }
 
+        private static Sprite CreateTowerBuildMarkerSprite(int size)
+        {
+            var texture = CreateMarkerTexture(size);
+            var center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
+            var half = size * 0.5f;
+            var outerShield = new[]
+            {
+                new Vector2(0f, 0.74f),
+                new Vector2(0.55f, 0.26f),
+                new Vector2(0.34f, -0.66f),
+                new Vector2(-0.34f, -0.66f),
+                new Vector2(-0.55f, 0.26f)
+            };
+            var innerShield = new[]
+            {
+                new Vector2(0f, 0.58f),
+                new Vector2(0.38f, 0.2f),
+                new Vector2(0.24f, -0.48f),
+                new Vector2(-0.24f, -0.48f),
+                new Vector2(-0.38f, 0.2f)
+            };
+
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var dx = (x - center.x) / half;
+                    var dy = (y - center.y) / half;
+                    var distance = Mathf.Sqrt(dx * dx + dy * dy);
+                    var point = new Vector2(dx, dy);
+                    var color = Color.clear;
+
+                    if (distance > 0.79f && distance < 0.9f)
+                    {
+                        color = new Color(0.18f, 1f, 0.32f, 0.92f);
+                    }
+                    else if (distance > 0.61f && distance < 0.68f)
+                    {
+                        color = new Color(0.96f, 0.71f, 0.28f, 0.96f);
+                    }
+
+                    if (IsPointInPolygon(point, outerShield))
+                    {
+                        color = new Color(0.55f, 0.13f, 0.12f, 1f);
+                    }
+
+                    if (IsPointInPolygon(point, innerShield))
+                    {
+                        color = new Color(0.88f, 0.33f, 0.23f, 1f);
+                    }
+
+                    if (Mathf.Abs(dx) < 0.14f && dy > -0.5f && dy < 0.2f)
+                    {
+                        color = new Color(0.2f, 0.08f, 0.06f, 1f);
+                    }
+
+                    if (Mathf.Abs(dx) < 0.06f && dy > 0.36f && dy < 0.76f)
+                    {
+                        color = new Color(0.96f, 0.82f, 0.42f, 1f);
+                    }
+
+                    if (Mathf.Abs(dx) < 0.36f && dy > -0.76f && dy < -0.61f)
+                    {
+                        color = new Color(1f, 0.86f, 0.43f, 1f);
+                    }
+
+                    texture.SetPixel(x, y, color);
+                }
+            }
+
+            return CreateMarkerSprite(texture, "Generated Tower Build Marker");
+        }
+
+        private static Sprite CreateResourceWellBuildMarkerSprite(int size)
+        {
+            var texture = CreateMarkerTexture(size);
+            var center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
+            var half = size * 0.5f;
+
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var dx = (x - center.x) / half;
+                    var dy = (y - center.y) / half;
+                    var distance = Mathf.Sqrt(dx * dx + dy * dy);
+                    var ellipse = dx * dx / 0.86f + dy * dy / 0.56f;
+                    var color = Color.clear;
+
+                    if (ellipse > 0.82f && ellipse < 1.05f)
+                    {
+                        color = new Color(0.19f, 1f, 0.37f, 0.9f);
+                    }
+
+                    if (distance < 0.58f)
+                    {
+                        color = new Color(0.06f, 0.31f, 0.42f, 1f);
+                    }
+
+                    if (distance < 0.43f)
+                    {
+                        color = new Color(0.26f, 0.82f, 1f, 1f);
+                    }
+
+                    if (distance > 0.49f && distance < 0.61f)
+                    {
+                        color = new Color(0.88f, 0.71f, 0.34f, 1f);
+                    }
+
+                    if (Mathf.Abs(dx) > 0.28f && Mathf.Abs(dx) < 0.43f && dy > -0.18f && dy < 0.64f)
+                    {
+                        color = new Color(0.86f, 0.7f, 0.34f, 1f);
+                    }
+
+                    if (Mathf.Abs(dx) < 0.56f && dy > 0.57f && dy < 0.74f)
+                    {
+                        color = new Color(0.96f, 0.82f, 0.43f, 1f);
+                    }
+
+                    if (Mathf.Abs(dx) < 0.7f && dy < -0.58f && dy > -0.75f)
+                    {
+                        color = new Color(0.31f, 0.25f, 0.13f, 1f);
+                    }
+
+                    texture.SetPixel(x, y, color);
+                }
+            }
+
+            return CreateMarkerSprite(texture, "Generated Resource Well Build Marker");
+        }
+
+        private static Texture2D CreateMarkerTexture(int size)
+        {
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Point;
+            return texture;
+        }
+
+        private static Sprite CreateMarkerSprite(Texture2D texture, string name)
+        {
+            texture.Apply();
+            var sprite = Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), 100f);
+            sprite.name = name;
+            return sprite;
+        }
+
         private static Sprite CreateResourceWellSiteSprite(int size)
         {
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
@@ -313,6 +487,23 @@ namespace WarOfEras.Battle.Core
 
             texture.Apply();
             return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        private static bool IsPointInPolygon(Vector2 point, Vector2[] polygon)
+        {
+            var inside = false;
+            for (int i = 0, j = polygon.Length - 1; i < polygon.Length; j = i++)
+            {
+                var pi = polygon[i];
+                var pj = polygon[j];
+                if (((pi.y > point.y) != (pj.y > point.y))
+                    && point.x < (pj.x - pi.x) * (point.y - pi.y) / (pj.y - pi.y) + pi.x)
+                {
+                    inside = !inside;
+                }
+            }
+
+            return inside;
         }
 
         private static bool IsInsideRoundedRect(int x, int y, int width, int height, int radius)

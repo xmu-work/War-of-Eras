@@ -5,6 +5,7 @@ namespace WarOfEras.Battle.Core
 {
     public sealed class BattleLayout : MonoBehaviour
     {
+        // 可选的场景布局契约：如果场景里存在这些标记点，控制器会优先使用它们覆盖代码内置坐标。
         [SerializeField] private float unitVisualScale = 0.62f;
         [SerializeField] private float baseVisualScale = 0.28f;
         [SerializeField] private float towerVisualScale = 0.16f;
@@ -62,6 +63,7 @@ namespace WarOfEras.Battle.Core
 
         public bool Validate(out string errorSummary)
         {
+            // 启动时做一次轻量校验，发现缺少关键标记就退回控制器里的默认战场数据。
             validationErrors.Clear();
             RequireMarker("Layout");
             RequireMarker("Layout/Routes");

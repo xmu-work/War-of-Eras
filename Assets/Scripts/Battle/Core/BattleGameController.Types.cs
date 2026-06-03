@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -82,32 +81,6 @@ namespace WarOfEras.Battle.Core
             public int EdgeA { get; }
             public int EdgeB { get; }
             public Vector3 Position { get; }
-        }
-
-        private sealed class RouteCandidate
-        {
-            public RouteCandidate(List<Vector3> points, float cost, int laneIndex)
-            {
-                Points = points;
-                Cost = cost;
-                LaneIndex = laneIndex;
-            }
-
-            public List<Vector3> Points { get; }
-            public float Cost { get; }
-            public int LaneIndex { get; }
-        }
-
-        private sealed class RoutePreview
-        {
-            public RoutePreview(GameObject root, RouteCandidate candidate)
-            {
-                Root = root;
-                Candidate = candidate;
-            }
-
-            public GameObject Root { get; }
-            public RouteCandidate Candidate { get; }
         }
 
         private sealed class BuildPlacementPreview

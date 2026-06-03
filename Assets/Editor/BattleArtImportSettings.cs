@@ -8,6 +8,7 @@ namespace WarOfEras.EditorTools
     {
         public static void Apply()
         {
+            // 当前只批量修正蛮荒时代图片导入设置，后续时代资源可按相同规则扩展 root。
             var root = "Assets/Resources/Barbarian";
             foreach (var path in Directory.GetFiles(root, "*.png", SearchOption.AllDirectories))
             {

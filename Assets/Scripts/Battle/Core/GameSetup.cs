@@ -27,6 +27,7 @@ namespace WarOfEras.Battle.Core
 
     public static class GameSession
     {
+        // MainMenu 与 Battle 之间共享的轻量会话数据；不落盘，重新进入项目后恢复默认设置。
         private static readonly BattleMapDefinition pixelFrontlineThreeLanes = new BattleMapDefinition(
             "pixel_frontline_three_lanes",
             "\u50cf\u7d20\u6218\u7ebf - \u65f6\u4ee3\u53d8\u4f53",

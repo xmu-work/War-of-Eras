@@ -9,6 +9,7 @@ namespace WarOfEras.EditorTools
     {
         public static void Run()
         {
+            // 编辑器辅助入口：统一从主菜单开始播放，避免直接进 Battle 时漏掉会话选择流程。
             const string mainMenuScene = "Assets/Scenes/MainMenu.unity";
 
             if (!System.IO.File.Exists(mainMenuScene))

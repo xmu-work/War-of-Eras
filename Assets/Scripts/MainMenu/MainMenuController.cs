@@ -19,7 +19,6 @@ namespace WarOfEras.MainMenu
         private const string MenuBackgroundResource = "MainMenu/Background";
         private const string TitleLogoResource = "MainMenu/TitleLogo";
         private const string FallbackBackgroundResource = "Battle/Maps/PixelFrontline_Barbarian";
-        private const string BaseCrestResource = "Barbarian/Base/Base";
 
         private static readonly Color ButtonNormalTint = new Color(0.76f, 0.9f, 1f, 1f);
         private static readonly Color ButtonHoverTint = new Color(1f, 1f, 1f, 1f);
@@ -50,7 +49,6 @@ namespace WarOfEras.MainMenu
         private static Sprite menuButtonSprite;
         private static Sprite primaryButtonSprite;
         private static Sprite panelSprite;
-        private static Sprite iconButtonSprite;
         private static Sprite topFadeSprite;
         private static Sprite bottomFadeSprite;
         private static Sprite dotSprite;
@@ -69,6 +67,7 @@ namespace WarOfEras.MainMenu
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void CreateForMainMenuScene()
         {
+            // 允许空场景直接运行：只要当前场景叫 MainMenu，就自动补一个菜单控制器。
             if (SceneManager.GetActiveScene().name != MainMenuSceneName)
             {
                 return;
@@ -114,6 +113,7 @@ namespace WarOfEras.MainMenu
 
         private void BuildMenu()
         {
+            // 主菜单完全由脚本生成，场景中只需要挂载 MainMenuController。
             var canvasObject = new GameObject(CanvasName, typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             canvasObject.transform.SetParent(transform, false);
 
@@ -147,6 +147,7 @@ namespace WarOfEras.MainMenu
 
         private void ShowHomeScreen()
         {
+            // 每次切屏都重建内容区，避免不同菜单页面的按钮和状态残留。
             ClearContent();
             difficultyButtons.Clear();
             startButton = null;
@@ -295,31 +296,6 @@ namespace WarOfEras.MainMenu
             message.rectTransform.offsetMax = Vector2.zero;
 
             CreateBackButton(ShowHomeScreen);
-        }
-
-        private void CreateHomeStatus()
-        {
-            var status = CreateStyledPanel("Home Status", contentRoot, new Color(0.045f, 0.052f, 0.055f, 0.88f));
-            status.anchorMin = new Vector2(0.04f, 0.86f);
-            status.anchorMax = new Vector2(0.96f, 1f);
-            status.offsetMin = Vector2.zero;
-            status.offsetMax = Vector2.zero;
-
-            var statusText = CreateText(
-                status,
-                "Status Text",
-                "\u5f53\u524d\u6218\u573a\uff1a" + selectedMap.DisplayName + "    \u96be\u5ea6\uff1a" + GameSession.DifficultyName,
-                20,
-                FontStyle.Bold,
-                TextAnchor.MiddleCenter);
-            statusText.color = new Color(0.9f, 0.84f, 0.68f, 1f);
-            statusText.resizeTextForBestFit = true;
-            statusText.resizeTextMinSize = 14;
-            statusText.resizeTextMaxSize = 20;
-            statusText.rectTransform.anchorMin = new Vector2(0.05f, 0.08f);
-            statusText.rectTransform.anchorMax = new Vector2(0.95f, 0.92f);
-            statusText.rectTransform.offsetMin = Vector2.zero;
-            statusText.rectTransform.offsetMax = Vector2.zero;
         }
 
         private void CreateHomeMenuButton(string label, UnityAction onClick, float y, bool pulse)
@@ -643,86 +619,6 @@ namespace WarOfEras.MainMenu
             }
         }
 
-        private void BuildSideActions(RectTransform root)
-        {
-            CreateIconButton(root, "Map Side Action", "\u56fe", "\u5730\u56fe", ShowMapSelectScreen, new Vector2(0.925f, 0.56f));
-            CreateIconButton(root, "Difficulty Side Action", "\u96be", "\u96be\u5ea6", ShowDifficultyScreen, new Vector2(0.925f, 0.44f));
-            CreateIconButton(root, "Settings Side Action", "\u8bbe", "\u8bbe\u7f6e", ShowSettingsScreen, new Vector2(0.925f, 0.32f));
-
-            var bulletin = CreateStyledPanel("War Bulletin", root, new Color(0.04f, 0.05f, 0.052f, 0.78f));
-            bulletin.anchorMin = new Vector2(0.06f, 0.12f);
-            bulletin.anchorMax = new Vector2(0.22f, 0.205f);
-            bulletin.offsetMin = Vector2.zero;
-            bulletin.offsetMax = Vector2.zero;
-
-            var text = CreateText(bulletin, "Bulletin Text", "AGE OF WAR", 18, FontStyle.Bold, TextAnchor.MiddleCenter);
-            text.color = new Color(0.94f, 0.72f, 0.4f, 1f);
-            text.rectTransform.anchorMin = new Vector2(0.08f, 0.08f);
-            text.rectTransform.anchorMax = new Vector2(0.92f, 0.92f);
-            text.rectTransform.offsetMin = Vector2.zero;
-            text.rectTransform.offsetMax = Vector2.zero;
-        }
-
-        private void CreateBaseCrest(RectTransform root)
-        {
-            var crest = CreateStyledPanel("Base Crest", root, new Color(0.04f, 0.045f, 0.045f, 0.68f));
-            crest.anchorMin = new Vector2(0.065f, 0.29f);
-            crest.anchorMax = new Vector2(0.225f, 0.61f);
-            crest.offsetMin = Vector2.zero;
-            crest.offsetMax = Vector2.zero;
-
-            var imageRect = CreatePanel("Base Crest Image", crest, Color.white);
-            imageRect.anchorMin = new Vector2(0.05f, 0.14f);
-            imageRect.anchorMax = new Vector2(0.95f, 0.92f);
-            imageRect.offsetMin = Vector2.zero;
-            imageRect.offsetMax = Vector2.zero;
-
-            var image = imageRect.GetComponent<Image>();
-            image.sprite = LoadResourceSprite(BaseCrestResource);
-            image.preserveAspect = true;
-            image.color = new Color(1f, 0.78f, 0.54f, 0.92f);
-            image.raycastTarget = false;
-
-            var label = CreateText(crest, "Crest Label", "\u86ee\u8352\u636e\u70b9", 18, FontStyle.Bold, TextAnchor.MiddleCenter);
-            label.color = new Color(0.95f, 0.74f, 0.45f, 1f);
-            label.rectTransform.anchorMin = new Vector2(0.05f, 0.02f);
-            label.rectTransform.anchorMax = new Vector2(0.95f, 0.16f);
-            label.rectTransform.offsetMin = Vector2.zero;
-            label.rectTransform.offsetMax = Vector2.zero;
-        }
-
-        private void CreateIconButton(RectTransform parent, string name, string symbol, string caption, UnityAction onClick, Vector2 anchor)
-        {
-            var rect = CreatePanel(name, parent, new Color(0.12f, 0.13f, 0.13f, 0.95f));
-            rect.anchorMin = anchor;
-            rect.anchorMax = anchor;
-            rect.sizeDelta = new Vector2(82f, 82f);
-            rect.anchoredPosition = Vector2.zero;
-
-            var image = rect.GetComponent<Image>();
-            image.sprite = IconButtonSprite;
-            image.type = Image.Type.Sliced;
-
-            var button = rect.gameObject.AddComponent<Button>();
-            button.targetGraphic = image;
-            button.onClick.AddListener(onClick);
-            SetButtonColor(button, new Color(0.9f, 0.92f, 0.86f, 1f));
-
-            var symbolText = CreateText(rect, "Symbol", symbol, 31, FontStyle.Bold, TextAnchor.MiddleCenter);
-            symbolText.color = new Color(0.95f, 0.74f, 0.38f, 1f);
-            symbolText.rectTransform.anchorMin = new Vector2(0.12f, 0.3f);
-            symbolText.rectTransform.anchorMax = new Vector2(0.88f, 0.9f);
-            symbolText.rectTransform.offsetMin = Vector2.zero;
-            symbolText.rectTransform.offsetMax = Vector2.zero;
-
-            var captionText = CreateText(rect, "Caption", caption, 13, FontStyle.Bold, TextAnchor.MiddleCenter);
-            captionText.color = new Color(0.74f, 0.82f, 0.78f, 1f);
-            captionText.rectTransform.anchorMin = new Vector2(0.06f, 0.08f);
-            captionText.rectTransform.anchorMax = new Vector2(0.94f, 0.34f);
-            captionText.rectTransform.offsetMin = Vector2.zero;
-            captionText.rectTransform.offsetMax = Vector2.zero;
-        }
-
         private Button CreateButton(RectTransform parent, string name, string label, UnityAction onClick, Color normalColor, int fontSize, bool pulse, bool showChevron = true)
         {
             var buttonRect = CreatePanel(name, parent, normalColor);
@@ -830,22 +726,6 @@ namespace WarOfEras.MainMenu
             }
 
             return Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), 100f);
-        }
-
-        private Image CreateLine(RectTransform parent, string name, Vector2 anchorMin, Vector2 anchorMax, Color color)
-        {
-            var line = CreatePanel(name, parent, color);
-            line.anchorMin = anchorMin;
-            line.anchorMax = anchorMax;
-            line.offsetMin = Vector2.zero;
-            line.offsetMax = Vector2.zero;
-
-            var image = line.GetComponent<Image>();
-            image.type = Image.Type.Filled;
-            image.fillMethod = Image.FillMethod.Horizontal;
-            image.fillAmount = 0.72f;
-            image.raycastTarget = false;
-            return image;
         }
 
         private RectTransform CreateStyledPanel(string name, Transform parent, Color color)

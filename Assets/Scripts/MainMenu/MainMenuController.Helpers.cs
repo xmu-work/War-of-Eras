@@ -119,24 +119,6 @@ namespace WarOfEras.MainMenu
             }
         }
 
-        private static Sprite IconButtonSprite
-        {
-            get
-            {
-                if (iconButtonSprite == null)
-                {
-                    iconButtonSprite = CreateBeveledSprite(
-                        new Color(0.07f, 0.12f, 0.18f, 1f),
-                        new Color(0.03f, 0.055f, 0.085f, 1f),
-                        new Color(0.012f, 0.024f, 0.044f, 1f),
-                        new Color(0.16f, 0.76f, 1f, 1f),
-                        new Color(0.56f, 0.92f, 1f, 1f));
-                }
-
-                return iconButtonSprite;
-            }
-        }
-
         private static Sprite TopFadeSprite
         {
             get
@@ -165,6 +147,7 @@ namespace WarOfEras.MainMenu
 
         private static Sprite CreateBeveledSprite(Color top, Color center, Color bottom, Color border, Color highlight)
         {
+            // 主菜单按钮和面板是运行时程序化贴图，减少对额外 UI 贴图资源的依赖。
             const int width = 96;
             const int height = 40;
             const int borderSize = 5;

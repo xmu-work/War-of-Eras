@@ -281,6 +281,141 @@ namespace WarOfEras.Battle.Core
         public abstract float Repair(float amount);
     }
 
+    public sealed class BattleFacilityHealthBar : MonoBehaviour
+    {
+        private const float BarHeight = 0.08f;
+        private const float BarPadding = 0.18f;
+        private const float FillInset = 0.014f;
+
+        private Transform root;
+        private SpriteRenderer borderRenderer;
+        private SpriteRenderer backgroundRenderer;
+        private SpriteRenderer fillRenderer;
+        private float localWidth = 1f;
+        private float localHeight = 0.08f;
+        private float fillRatio = 1f;
+
+        public void Configure(SpriteRenderer anchorRenderer, float minWorldWidth, float maxWorldWidth, int sortingOrder)
+        {
+            EnsureRenderers();
+            RefreshLayout(anchorRenderer, minWorldWidth, maxWorldWidth);
+            UpdateSorting(sortingOrder);
+            SetHealth(1f, 1f);
+        }
+
+        public void RefreshLayout(SpriteRenderer anchorRenderer, float minWorldWidth, float maxWorldWidth)
+        {
+            EnsureRenderers();
+            if (anchorRenderer == null || anchorRenderer.sprite == null)
+            {
+                return;
+            }
+
+            var parentScale = Mathf.Max(0.01f, transform.localScale.x);
+            var spriteBounds = anchorRenderer.sprite.bounds;
+            var worldWidth = Mathf.Clamp(spriteBounds.size.x * transform.localScale.x * 0.82f, minWorldWidth, maxWorldWidth);
+            localWidth = worldWidth / parentScale;
+            localHeight = BarHeight / parentScale;
+
+            root.localPosition = new Vector3(0f, spriteBounds.extents.y + BarPadding / parentScale, 0f);
+            SetRendererSize(borderRenderer, localWidth + FillInset * 4f / parentScale, localHeight + FillInset * 4f / parentScale);
+            SetRendererSize(backgroundRenderer, localWidth, localHeight);
+            UpdateFillTransform();
+        }
+
+        public void SetHealth(float currentHealth, float maxHealth)
+        {
+            fillRatio = maxHealth > 0f ? Mathf.Clamp01(currentHealth / maxHealth) : 0f;
+            if (fillRenderer != null)
+            {
+                fillRenderer.color = GetFillColor(fillRatio);
+            }
+
+            UpdateFillTransform();
+        }
+
+        public void UpdateSorting(int sortingOrder)
+        {
+            if (borderRenderer != null)
+            {
+                borderRenderer.sortingOrder = sortingOrder;
+            }
+
+            if (backgroundRenderer != null)
+            {
+                backgroundRenderer.sortingOrder = sortingOrder + 1;
+            }
+
+            if (fillRenderer != null)
+            {
+                fillRenderer.sortingOrder = sortingOrder + 2;
+            }
+        }
+
+        private void EnsureRenderers()
+        {
+            if (root != null)
+            {
+                return;
+            }
+
+            root = new GameObject("Facility Health Bar").transform;
+            root.SetParent(transform, false);
+
+            borderRenderer = CreateHealthBarRenderer("Health Bar Border", root, new Color(0.02f, 0.018f, 0.014f, 0.92f));
+            backgroundRenderer = CreateHealthBarRenderer("Health Bar Background", root, new Color(0.08f, 0.065f, 0.045f, 0.82f));
+            fillRenderer = CreateHealthBarRenderer("Health Bar Fill", root, new Color(0.36f, 0.94f, 0.28f, 0.96f));
+        }
+
+        private static SpriteRenderer CreateHealthBarRenderer(string name, Transform parent, Color color)
+        {
+            var child = new GameObject(name, typeof(SpriteRenderer));
+            child.transform.SetParent(parent, false);
+            var renderer = child.GetComponent<SpriteRenderer>();
+            renderer.sprite = BattleGameController.SharedWhiteSprite;
+            renderer.color = color;
+            return renderer;
+        }
+
+        private void UpdateFillTransform()
+        {
+            if (fillRenderer == null)
+            {
+                return;
+            }
+
+            var inset = FillInset / Mathf.Max(0.01f, transform.localScale.x);
+            var fillWidth = Mathf.Max(0f, (localWidth - inset * 2f) * fillRatio);
+            var fillHeight = Mathf.Max(0f, localHeight - inset * 2f);
+            SetRendererSize(fillRenderer, fillWidth, fillHeight);
+            fillRenderer.transform.localPosition = new Vector3((fillWidth - localWidth + inset * 2f) * 0.5f, 0f, 0f);
+        }
+
+        private static void SetRendererSize(SpriteRenderer renderer, float width, float height)
+        {
+            if (renderer == null || renderer.sprite == null)
+            {
+                return;
+            }
+
+            var bounds = renderer.sprite.bounds.size;
+            renderer.transform.localScale = new Vector3(
+                bounds.x > 0f ? width / bounds.x : width,
+                bounds.y > 0f ? height / bounds.y : height,
+                1f);
+        }
+
+        private static Color GetFillColor(float ratio)
+        {
+            if (ratio < 0.5f)
+            {
+                return Color.Lerp(new Color(0.95f, 0.14f, 0.1f, 0.98f), new Color(1f, 0.86f, 0.18f, 0.98f), ratio * 2f);
+            }
+
+            return Color.Lerp(new Color(1f, 0.86f, 0.18f, 0.98f), new Color(0.32f, 0.95f, 0.24f, 0.98f), (ratio - 0.5f) * 2f);
+        }
+    }
+
     public sealed class AgePowerDefinition
     {
         public AgePowerDefinition(string displayName, float cooldown, float damage, bool isGlobal, float statusDuration, float speedMultiplier, float attackIntervalMultiplier)
@@ -311,12 +446,20 @@ namespace WarOfEras.Battle.Core
         private const float BuilderRepairPerSecond = 55f;
         private const float BuilderWorkEffectInterval = 0.45f;
 
+        private enum UnitAnimationState
+        {
+            Move,
+            Attack,
+            Hold
+        }
+
         private BattleGameController controller;
         private Transform visualRoot;
         private SpriteRenderer spriteRenderer;
         private SpriteRenderer shadowRenderer;
         private SpriteRenderer selectionRenderer;
         private Vector3[] routePoints;
+        private Sprite[] activeAnimationFrames;
         private Sprite holdSprite;
         private float health;
         private float damage;
@@ -337,6 +480,7 @@ namespace WarOfEras.Battle.Core
         private int builderTaskSlotIndex = -1;
         private int builderTaskTowerTypeIndex = -1;
         private BuilderTaskKind builderTaskKind = BuilderTaskKind.None;
+        private UnitAnimationState animationState = UnitAnimationState.Move;
         private bool attacking;
         private bool stopAtRouteEnd;
         private bool reachedHoldPoint;
@@ -386,7 +530,12 @@ namespace WarOfEras.Battle.Core
             visualRoot = visualObject.transform;
 
             spriteRenderer = visualObject.GetComponent<SpriteRenderer>();
-            spriteRenderer.sprite = definition.MoveFrames[0];
+            activeAnimationFrames = definition.MoveFrames;
+            var initialFrameCount = activeAnimationFrames != null ? activeAnimationFrames.Length : 0;
+            var animationSeed = Mathf.Abs(GetInstanceID() % 10000);
+            frameIndex = initialFrameCount > 0 ? animationSeed % initialFrameCount : 0;
+            frameTimer = initialFrameCount > 1 ? (animationSeed % 100) / 100f * 0.16f : 0f;
+            spriteRenderer.sprite = initialFrameCount > 0 ? activeAnimationFrames[frameIndex] : null;
             holdSprite = spriteRenderer.sprite;
             spriteRenderer.flipX = team == 1;
             spriteRenderer.color = GetBaseTint();
@@ -558,13 +707,13 @@ namespace WarOfEras.Battle.Core
             // 建筑兵优先完成已派发的修建设施任务；没有待建任务时才自动修复附近友方设施。
             if (HasAssignedBuilderTask)
             {
-                if (!controller.IsBuilderTaskPending(builderTaskKind, builderTaskSlotIndex, builderTaskTowerTypeIndex))
+                if (!controller.IsBuilderTaskPending(builderTaskKind, builderTaskSlotIndex, builderTaskTowerTypeIndex, Team))
                 {
                     ClearBuilderTask();
                     return false;
                 }
 
-                var targetPosition = controller.GetBuilderTaskPosition(builderTaskKind, builderTaskSlotIndex);
+                var targetPosition = controller.GetBuilderTaskPosition(builderTaskKind, builderTaskSlotIndex, Team);
                 if (Vector2.Distance(transform.position, targetPosition) <= BuilderActionRange)
                 {
                     if (controller.TryCompleteBuilderTask(this, builderTaskKind, builderTaskSlotIndex, builderTaskTowerTypeIndex))
@@ -682,9 +831,10 @@ namespace WarOfEras.Battle.Core
 
         private void HoldPosition()
         {
-            if (spriteRenderer != null && holdSprite != null)
+            if (spriteRenderer != null && holdSprite != null && spriteRenderer.sprite != holdSprite)
             {
                 spriteRenderer.sprite = holdSprite;
+                UpdateGroundShadow();
             }
         }
 
@@ -708,27 +858,58 @@ namespace WarOfEras.Battle.Core
 
         private void UpdateAnimation()
         {
-            var frames = attacking && Definition.AttackFrames.Length > 0 ? Definition.AttackFrames : Definition.MoveFrames;
+            if (spriteRenderer == null)
+            {
+                return;
+            }
+
             if (reachedHoldPoint && !attacking)
             {
+                animationState = UnitAnimationState.Hold;
+                activeAnimationFrames = null;
+                frameTimer = 0f;
+                frameIndex = 0;
                 HoldPosition();
                 return;
             }
 
-            if (frames.Length == 0)
+            var nextState = attacking && Definition.AttackFrames.Length > 0
+                ? UnitAnimationState.Attack
+                : UnitAnimationState.Move;
+            var frames = nextState == UnitAnimationState.Attack ? Definition.AttackFrames : Definition.MoveFrames;
+            if (frames == null || frames.Length == 0)
             {
                 return;
             }
 
+            if (animationState != nextState || !ReferenceEquals(activeAnimationFrames, frames))
+            {
+                StartAnimation(nextState, frames);
+            }
+
+            var frameDuration = nextState == UnitAnimationState.Attack ? 0.11f : 0.16f;
             frameTimer += Time.deltaTime;
-            var frameDuration = attacking ? 0.11f : 0.16f;
-            if (frameTimer < frameDuration)
+            if (frameTimer < frameDuration || frames.Length <= 1)
             {
                 return;
             }
 
+            while (frameTimer >= frameDuration)
+            {
+                frameTimer -= frameDuration;
+                frameIndex = (frameIndex + 1) % frames.Length;
+            }
+
+            spriteRenderer.sprite = frames[frameIndex];
+            UpdateGroundShadow();
+        }
+
+        private void StartAnimation(UnitAnimationState nextState, Sprite[] frames)
+        {
+            animationState = nextState;
+            activeAnimationFrames = frames;
             frameTimer = 0f;
-            frameIndex = (frameIndex + 1) % frames.Length;
+            frameIndex = 0;
             spriteRenderer.sprite = frames[frameIndex];
             UpdateGroundShadow();
         }
@@ -905,14 +1086,20 @@ namespace WarOfEras.Battle.Core
 
     public sealed class BattleTower : BattleFacility
     {
+        private const float HealthBarMinWidth = 0.72f;
+        private const float HealthBarMaxWidth = 1.35f;
+        private const float TowerFrameInterval = 0.16f;
+
         private BattleGameController controller;
         private SpriteRenderer spriteRenderer;
         private SpriteRenderer shadowRenderer;
+        private BattleFacilityHealthBar healthBar;
         private Sprite[] frames;
         private TowerDefinition definition;
         private float health;
         private float maxHealth;
         private float attackTimer;
+        private float attackAnimationTimer;
         private float frameTimer;
         private int laneIndex;
         private int team;
@@ -948,6 +1135,9 @@ namespace WarOfEras.Battle.Core
             spriteRenderer.color = GetBaseTint();
             spriteRenderer.flipX = team == 1;
 
+            healthBar = gameObject.AddComponent<BattleFacilityHealthBar>();
+            healthBar.Configure(spriteRenderer, HealthBarMinWidth, HealthBarMaxWidth, 0);
+            RefreshHealthBar();
             UpdateGroundShadow();
             UpdateSorting();
         }
@@ -961,6 +1151,7 @@ namespace WarOfEras.Battle.Core
 
             health -= Mathf.Max(0f, amount);
             RefreshDamageTint();
+            RefreshHealthBar();
 
             if (health > 0f)
             {
@@ -982,6 +1173,7 @@ namespace WarOfEras.Battle.Core
             var previousHealth = health;
             health = Mathf.Min(maxHealth, health + amount);
             RefreshDamageTint();
+            RefreshHealthBar();
             return health - previousHealth;
         }
 
@@ -991,6 +1183,7 @@ namespace WarOfEras.Battle.Core
             frames = towerFrames;
             frameIndex = 0;
             frameTimer = 0f;
+            attackAnimationTimer = 0f;
             var healthRatio = maxHealth > 0f ? Mathf.Clamp01(health / maxHealth) : 1f;
             maxHealth = GetTowerMaxHealth(towerDefinition);
             health = Mathf.Clamp(maxHealth * healthRatio, 1f, maxHealth);
@@ -1003,6 +1196,7 @@ namespace WarOfEras.Battle.Core
             spriteRenderer.sprite = frames != null && frames.Length > 0 ? frames[0] : null;
             spriteRenderer.flipX = team == 1;
             RefreshDamageTint();
+            RefreshHealthBar();
 
             UpdateGroundShadow();
             UpdateSorting();
@@ -1016,6 +1210,7 @@ namespace WarOfEras.Battle.Core
             }
 
             attackTimer -= Time.deltaTime;
+            attackAnimationTimer = Mathf.Max(0f, attackAnimationTimer - Time.deltaTime);
             Animate();
 
             if (attackTimer > 0f)
@@ -1033,9 +1228,24 @@ namespace WarOfEras.Battle.Core
             var damage = definition != null ? definition.Damage : 34f;
             var interval = definition != null ? definition.AttackInterval : 1.05f;
             var multiplier = team == 0 ? controller.TowerDamageMultiplier : 1f;
-            controller.SpawnCombatHitEffect(target.transform.position, team, true);
+            StartAttackAnimation();
+            controller.SpawnTowerAttackEffect(CenterPosition, target.transform.position, team, towerTypeIndex, definition != null ? definition.DisplayName : string.Empty);
             target.TakeDamage(damage * multiplier, team);
             attackTimer = interval;
+        }
+
+        private void StartAttackAnimation()
+        {
+            if (frames == null || frames.Length == 0 || spriteRenderer == null)
+            {
+                return;
+            }
+
+            attackAnimationTimer = frames.Length * TowerFrameInterval;
+            frameTimer = 0f;
+            frameIndex = 0;
+            spriteRenderer.sprite = frames[frameIndex];
+            UpdateGroundShadow();
         }
 
         private void Animate()
@@ -1046,13 +1256,25 @@ namespace WarOfEras.Battle.Core
             }
 
             frameTimer += Time.deltaTime;
-            if (frameTimer < 0.16f)
+            if (attackAnimationTimer <= 0f)
+            {
+                if (frameIndex != 0 && spriteRenderer != null)
+                {
+                    frameIndex = 0;
+                    spriteRenderer.sprite = frames[frameIndex];
+                    UpdateGroundShadow();
+                }
+
+                return;
+            }
+
+            if (frameTimer < TowerFrameInterval)
             {
                 return;
             }
 
             frameTimer = 0f;
-            frameIndex = (frameIndex + 1) % frames.Length;
+            frameIndex = frameIndex < frames.Length - 1 ? frameIndex + 1 : frames.Length - 1;
             spriteRenderer.sprite = frames[frameIndex];
             UpdateGroundShadow();
         }
@@ -1079,6 +1301,10 @@ namespace WarOfEras.Battle.Core
             var worldWidth = Mathf.Clamp(spriteBounds.size.x * transform.localScale.x * 0.72f, 0.65f, 1.35f);
             shadowRenderer.transform.localScale = new Vector3(worldWidth / parentScale, 0.16f / parentScale, 1f);
             shadowRenderer.transform.localPosition = new Vector3(0f, -spriteBounds.extents.y + 0.12f / parentScale, 0f);
+            if (healthBar != null)
+            {
+                healthBar.RefreshLayout(spriteRenderer, HealthBarMinWidth, HealthBarMaxWidth);
+            }
         }
 
         private Color GetBaseTint()
@@ -1111,6 +1337,11 @@ namespace WarOfEras.Battle.Core
             {
                 shadowRenderer.sortingOrder = order - 1;
             }
+
+            if (healthBar != null)
+            {
+                healthBar.UpdateSorting(order + 4);
+            }
         }
 
         private static float GetTowerMaxHealth(TowerDefinition towerDefinition)
@@ -1122,15 +1353,26 @@ namespace WarOfEras.Battle.Core
 
             return 220f + towerDefinition.Damage * 6f + towerDefinition.Range * 20f;
         }
+
+        private void RefreshHealthBar()
+        {
+            if (healthBar != null)
+            {
+                healthBar.SetHealth(health, maxHealth);
+            }
+        }
     }
 
     public sealed class BattleResourceWell : BattleFacility
     {
         private const float ResourceWellMaxHealth = 360f;
+        private const float HealthBarMinWidth = 0.52f;
+        private const float HealthBarMaxWidth = 1.05f;
 
         private BattleGameController controller;
         private SpriteRenderer spriteRenderer;
         private SpriteRenderer shadowRenderer;
+        private BattleFacilityHealthBar healthBar;
         private float health;
         private int slotIndex;
         private int team;
@@ -1155,6 +1397,9 @@ namespace WarOfEras.Battle.Core
             spriteRenderer.sprite = sprite;
             spriteRenderer.flipX = team == 1;
             spriteRenderer.color = GetBaseTint();
+            healthBar = gameObject.AddComponent<BattleFacilityHealthBar>();
+            healthBar.Configure(spriteRenderer, HealthBarMinWidth, HealthBarMaxWidth, 0);
+            RefreshHealthBar();
             UpdateGroundShadow();
             UpdateSorting();
         }
@@ -1168,6 +1413,7 @@ namespace WarOfEras.Battle.Core
 
             health -= Mathf.Max(0f, amount);
             RefreshDamageTint();
+            RefreshHealthBar();
 
             if (health > 0f)
             {
@@ -1189,6 +1435,7 @@ namespace WarOfEras.Battle.Core
             var previousHealth = health;
             health = Mathf.Min(ResourceWellMaxHealth, health + amount);
             RefreshDamageTint();
+            RefreshHealthBar();
             return health - previousHealth;
         }
 
@@ -1214,6 +1461,10 @@ namespace WarOfEras.Battle.Core
             var worldWidth = Mathf.Clamp(spriteBounds.size.x * transform.localScale.x * 0.7f, 0.42f, 0.95f);
             shadowRenderer.transform.localScale = new Vector3(worldWidth / parentScale, 0.12f / parentScale, 1f);
             shadowRenderer.transform.localPosition = new Vector3(0f, -spriteBounds.extents.y + 0.1f / parentScale, 0f);
+            if (healthBar != null)
+            {
+                healthBar.RefreshLayout(spriteRenderer, HealthBarMinWidth, HealthBarMaxWidth);
+            }
         }
 
         private Color GetBaseTint()
@@ -1244,6 +1495,19 @@ namespace WarOfEras.Battle.Core
             if (shadowRenderer != null)
             {
                 shadowRenderer.sortingOrder = order - 1;
+            }
+
+            if (healthBar != null)
+            {
+                healthBar.UpdateSorting(order + 4);
+            }
+        }
+
+        private void RefreshHealthBar()
+        {
+            if (healthBar != null)
+            {
+                healthBar.SetHealth(health, ResourceWellMaxHealth);
             }
         }
     }

@@ -8,6 +8,59 @@ namespace WarOfEras.Battle.Core
         internal static Sprite SharedWhiteSprite => WhiteSprite;
         internal static Sprite SharedVfxCircleSprite => VfxCircleSprite;
 
+        private static readonly Vector2[] AgePowerLightningIconPolygon =
+        {
+            new Vector2(-0.12f, 0.72f),
+            new Vector2(0.26f, 0.1f),
+            new Vector2(0.07f, 0.1f),
+            new Vector2(0.22f, -0.72f),
+            new Vector2(-0.35f, -0.04f),
+            new Vector2(-0.1f, -0.04f)
+        };
+
+        private static readonly Vector2[] CommandShieldOuterPolygon =
+        {
+            new Vector2(0f, 0.74f),
+            new Vector2(0.5f, 0.32f),
+            new Vector2(0.32f, -0.58f),
+            new Vector2(0f, -0.78f),
+            new Vector2(-0.32f, -0.58f),
+            new Vector2(-0.5f, 0.32f)
+        };
+
+        private static readonly Vector2[] CommandShieldInnerPolygon =
+        {
+            new Vector2(0f, 0.54f),
+            new Vector2(0.32f, 0.22f),
+            new Vector2(0.2f, -0.42f),
+            new Vector2(0f, -0.58f),
+            new Vector2(-0.2f, -0.42f),
+            new Vector2(-0.32f, 0.22f)
+        };
+
+        private static readonly Vector2[] MobilizationFlagPolygon =
+        {
+            new Vector2(-0.4f, 0.58f),
+            new Vector2(0.46f, 0.48f),
+            new Vector2(0.25f, 0.18f),
+            new Vector2(0.46f, -0.04f),
+            new Vector2(-0.4f, 0.04f)
+        };
+
+        private static readonly Vector2[] AttackEvolutionArrowheadPolygon =
+        {
+            new Vector2(0.46f, 0.58f),
+            new Vector2(0.52f, 0.12f),
+            new Vector2(0.08f, 0.28f)
+        };
+
+        private static readonly Vector2[] RestartArrowheadPolygon =
+        {
+            new Vector2(0.32f, 0.62f),
+            new Vector2(0.68f, 0.54f),
+            new Vector2(0.5f, 0.22f)
+        };
+
         private static Sprite PanelSprite
         {
             get
@@ -109,6 +162,112 @@ namespace WarOfEras.Battle.Core
                 }
 
                 return resourceWellBuiltSprite;
+            }
+        }
+
+        private static Sprite GetAgePowerButtonSprite(int index)
+        {
+            var clampedIndex = Mathf.Clamp(index, 0, AgePowers.Length - 1);
+            if (agePowerIconSprites == null || agePowerIconSprites.Length != AgePowers.Length)
+            {
+                agePowerIconSprites = new Sprite[AgePowers.Length];
+            }
+
+            if (agePowerIconSprites[clampedIndex] == null)
+            {
+                agePowerIconSprites[clampedIndex] = CreateAgePowerIconSprite(clampedIndex);
+            }
+
+            return agePowerIconSprites[clampedIndex];
+        }
+
+        private static Sprite ShieldIconSprite
+        {
+            get
+            {
+                if (shieldIconSprite == null)
+                {
+                    shieldIconSprite = CreateCommandIconSprite(
+                        CommandIconKind.Shield,
+                        0,
+                        new Color(0.18f, 0.42f, 0.66f, 1f),
+                        new Color(0.82f, 0.94f, 1f, 1f),
+                        "Generated Shield Command Icon");
+                }
+
+                return shieldIconSprite;
+            }
+        }
+
+        private static Sprite MobilizationIconSprite
+        {
+            get
+            {
+                if (mobilizationIconSprite == null)
+                {
+                    mobilizationIconSprite = CreateCommandIconSprite(
+                        CommandIconKind.Mobilization,
+                        0,
+                        new Color(0.58f, 0.43f, 0.14f, 1f),
+                        new Color(1f, 0.84f, 0.34f, 1f),
+                        "Generated Mobilization Command Icon");
+                }
+
+                return mobilizationIconSprite;
+            }
+        }
+
+        private static Sprite AttackEvolutionIconSprite
+        {
+            get
+            {
+                if (attackEvolutionIconSprite == null)
+                {
+                    attackEvolutionIconSprite = CreateCommandIconSprite(
+                        CommandIconKind.AttackEvolution,
+                        0,
+                        new Color(0.65f, 0.16f, 0.12f, 1f),
+                        new Color(1f, 0.62f, 0.26f, 1f),
+                        "Generated Attack Evolution Command Icon");
+                }
+
+                return attackEvolutionIconSprite;
+            }
+        }
+
+        private static Sprite DefenseEvolutionIconSprite
+        {
+            get
+            {
+                if (defenseEvolutionIconSprite == null)
+                {
+                    defenseEvolutionIconSprite = CreateCommandIconSprite(
+                        CommandIconKind.DefenseEvolution,
+                        0,
+                        new Color(0.18f, 0.38f, 0.58f, 1f),
+                        new Color(0.76f, 0.96f, 1f, 1f),
+                        "Generated Defense Evolution Command Icon");
+                }
+
+                return defenseEvolutionIconSprite;
+            }
+        }
+
+        private static Sprite RestartIconSprite
+        {
+            get
+            {
+                if (restartIconSprite == null)
+                {
+                    restartIconSprite = CreateCommandIconSprite(
+                        CommandIconKind.Restart,
+                        0,
+                        new Color(0.38f, 0.32f, 0.48f, 1f),
+                        new Color(0.95f, 0.86f, 1f, 1f),
+                        "Generated Restart Command Icon");
+                }
+
+                return restartIconSprite;
             }
         }
 
@@ -487,6 +646,274 @@ namespace WarOfEras.Battle.Core
 
             texture.Apply();
             return Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        private static Sprite CreateAgePowerIconSprite(int index)
+        {
+            var clampedIndex = Mathf.Clamp(index, 0, AgeTints.Length - 1);
+            var tint = AgeTints[clampedIndex];
+            return CreateCommandIconSprite(
+                CommandIconKind.AgePower,
+                clampedIndex,
+                Color.Lerp(tint, Color.black, 0.42f),
+                Color.Lerp(tint, Color.white, 0.32f),
+                "Generated Age Power Command Icon " + clampedIndex);
+        }
+
+        private static Sprite CreateCommandIconSprite(CommandIconKind kind, int variant, Color baseColor, Color accentColor, string name)
+        {
+            const int size = 128;
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+
+            var center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
+            var half = size * 0.5f;
+            var brightAccent = Color.Lerp(accentColor, Color.white, 0.28f);
+            var shadowAccent = Color.Lerp(accentColor, Color.black, 0.34f);
+
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var point = new Vector2((x - center.x) / half, (y - center.y) / half);
+                    var dx = point.x;
+                    var dy = point.y;
+                    var distance = Mathf.Sqrt(dx * dx + dy * dy);
+                    var color = Color.clear;
+
+                    if (distance <= 0.92f)
+                    {
+                        var shade = Mathf.Clamp01(0.42f + (1f - distance) * 0.44f + dy * 0.08f);
+                        color = Color.Lerp(Color.black, baseColor, shade);
+                        color.a = 1f;
+
+                        if (distance > 0.78f)
+                        {
+                            color = Color.Lerp(color, accentColor, Mathf.InverseLerp(0.78f, 0.92f, distance) * 0.72f);
+                        }
+                    }
+
+                    switch (kind)
+                    {
+                        case CommandIconKind.AgePower:
+                            PaintAgePowerIconPixel(variant, point, distance, brightAccent, shadowAccent, ref color);
+                            break;
+                        case CommandIconKind.Shield:
+                            PaintShieldIconPixel(point, brightAccent, shadowAccent, ref color);
+                            break;
+                        case CommandIconKind.Mobilization:
+                            PaintMobilizationIconPixel(point, brightAccent, shadowAccent, ref color);
+                            break;
+                        case CommandIconKind.AttackEvolution:
+                            PaintAttackEvolutionIconPixel(point, brightAccent, shadowAccent, ref color);
+                            break;
+                        case CommandIconKind.DefenseEvolution:
+                            PaintDefenseEvolutionIconPixel(point, brightAccent, shadowAccent, ref color);
+                            break;
+                        case CommandIconKind.Restart:
+                            PaintRestartIconPixel(point, distance, brightAccent, shadowAccent, ref color);
+                            break;
+                    }
+
+                    texture.SetPixel(x, y, color);
+                }
+            }
+
+            texture.Apply();
+            var sprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
+            sprite.name = name;
+            return sprite;
+        }
+
+        private static void PaintAgePowerIconPixel(int variant, Vector2 point, float distance, Color accent, Color shadow, ref Color color)
+        {
+            var dx = point.x;
+            var dy = point.y;
+
+            switch (variant)
+            {
+                case 0:
+                    if (Mathf.Abs(distance - 0.36f) < 0.028f || Mathf.Abs(distance - 0.58f) < 0.022f)
+                    {
+                        color = accent;
+                    }
+
+                    if (IsPointNearSegment(point, new Vector2(-0.58f, 0.12f), new Vector2(-0.22f, -0.02f), 0.035f)
+                        || IsPointNearSegment(point, new Vector2(-0.22f, -0.02f), new Vector2(0.08f, 0.14f), 0.035f)
+                        || IsPointNearSegment(point, new Vector2(0.08f, 0.14f), new Vector2(0.52f, -0.04f), 0.035f))
+                    {
+                        color = Color.Lerp(shadow, Color.black, 0.24f);
+                    }
+
+                    break;
+                case 1:
+                    if ((dx + 0.05f) * (dx + 0.05f) / 0.16f + (dy + 0.1f) * (dy + 0.1f) / 0.14f < 1f)
+                    {
+                        color = accent;
+                    }
+
+                    if (Mathf.Abs(dx + 0.05f) < 0.08f && dy > 0.2f && dy < 0.42f)
+                    {
+                        color = shadow;
+                    }
+
+                    if (IsPointNearSegment(point, new Vector2(0.03f, 0.42f), new Vector2(0.32f, 0.66f), 0.035f)
+                        || (Mathf.Abs(dx - 0.4f) < 0.08f && Mathf.Abs(dy - 0.7f) < 0.08f))
+                    {
+                        color = Color.Lerp(accent, Color.white, 0.34f);
+                    }
+
+                    break;
+                case 2:
+                    if (IsPointInPolygon(point, AgePowerLightningIconPolygon))
+                    {
+                        color = accent;
+                    }
+
+                    break;
+                case 3:
+                    if (distance < 0.14f)
+                    {
+                        color = accent;
+                    }
+
+                    var angle = Mathf.Repeat(Mathf.Atan2(dy, dx) * Mathf.Rad2Deg + 360f, 360f);
+                    var sector = Mathf.Repeat(angle + 30f, 120f);
+                    if (distance > 0.28f && distance < 0.68f && sector < 42f)
+                    {
+                        color = accent;
+                    }
+
+                    if (Mathf.Abs(distance - 0.76f) < 0.028f)
+                    {
+                        color = shadow;
+                    }
+
+                    break;
+                default:
+                    if (Mathf.Abs(distance - 0.52f) < 0.032f)
+                    {
+                        color = accent;
+                    }
+
+                    if (IsPointNearSegment(point, Vector2.zero, new Vector2(0.02f, 0.44f), 0.032f)
+                        || IsPointNearSegment(point, Vector2.zero, new Vector2(0.34f, -0.18f), 0.032f))
+                    {
+                        color = accent;
+                    }
+
+                    if (Mathf.Abs(distance - 0.34f) < 0.02f && Mathf.Abs(dx) > 0.18f)
+                    {
+                        color = shadow;
+                    }
+
+                    break;
+            }
+        }
+
+        private static void PaintShieldIconPixel(Vector2 point, Color accent, Color shadow, ref Color color)
+        {
+            if (IsPointInPolygon(point, CommandShieldOuterPolygon))
+            {
+                color = shadow;
+            }
+
+            if (IsPointInPolygon(point, CommandShieldInnerPolygon))
+            {
+                color = accent;
+            }
+
+            if (Mathf.Abs(point.x) < 0.04f && point.y > -0.52f && point.y < 0.48f)
+            {
+                color = Color.Lerp(accent, Color.white, 0.34f);
+            }
+        }
+
+        private static void PaintMobilizationIconPixel(Vector2 point, Color accent, Color shadow, ref Color color)
+        {
+            if (Mathf.Abs(point.x + 0.42f) < 0.035f && point.y > -0.62f && point.y < 0.66f)
+            {
+                color = shadow;
+            }
+
+            if (IsPointInPolygon(point, MobilizationFlagPolygon))
+            {
+                color = accent;
+            }
+
+            if (IsPointNearSegment(point, new Vector2(-0.18f, -0.24f), new Vector2(0.5f, -0.24f), 0.04f)
+                || IsPointNearSegment(point, new Vector2(0.22f, -0.44f), new Vector2(0.5f, -0.24f), 0.04f)
+                || IsPointNearSegment(point, new Vector2(0.22f, -0.04f), new Vector2(0.5f, -0.24f), 0.04f))
+            {
+                color = Color.Lerp(accent, Color.white, 0.26f);
+            }
+        }
+
+        private static void PaintAttackEvolutionIconPixel(Vector2 point, Color accent, Color shadow, ref Color color)
+        {
+            if (IsPointNearSegment(point, new Vector2(-0.48f, -0.48f), new Vector2(0.42f, 0.38f), 0.055f))
+            {
+                color = accent;
+            }
+
+            if (IsPointInPolygon(point, AttackEvolutionArrowheadPolygon))
+            {
+                color = accent;
+            }
+
+            if (IsPointNearSegment(point, new Vector2(-0.5f, 0.32f), new Vector2(-0.08f, 0.64f), 0.035f)
+                || IsPointNearSegment(point, new Vector2(-0.5f, 0.14f), new Vector2(-0.2f, 0.36f), 0.03f))
+            {
+                color = shadow;
+            }
+        }
+
+        private static void PaintDefenseEvolutionIconPixel(Vector2 point, Color accent, Color shadow, ref Color color)
+        {
+            PaintShieldIconPixel(point * 1.1f + new Vector2(0f, -0.12f), accent, shadow, ref color);
+
+            if (IsPointNearSegment(point, new Vector2(0f, -0.46f), new Vector2(0f, 0.42f), 0.045f)
+                || IsPointNearSegment(point, new Vector2(-0.22f, 0.2f), new Vector2(0f, 0.46f), 0.045f)
+                || IsPointNearSegment(point, new Vector2(0.22f, 0.2f), new Vector2(0f, 0.46f), 0.045f))
+            {
+                color = Color.Lerp(accent, Color.white, 0.32f);
+            }
+        }
+
+        private static void PaintRestartIconPixel(Vector2 point, float distance, Color accent, Color shadow, ref Color color)
+        {
+            var angle = Mathf.Repeat(Mathf.Atan2(point.y, point.x) * Mathf.Rad2Deg + 360f, 360f);
+            if (distance > 0.42f && distance < 0.58f && angle > 26f && angle < 330f)
+            {
+                color = accent;
+            }
+
+            if (IsPointInPolygon(point, RestartArrowheadPolygon))
+            {
+                color = accent;
+            }
+
+            if (IsPointNearSegment(point, new Vector2(-0.2f, -0.12f), new Vector2(0.2f, -0.12f), 0.04f)
+                || IsPointNearSegment(point, new Vector2(0f, -0.34f), new Vector2(0.2f, -0.12f), 0.04f)
+                || IsPointNearSegment(point, new Vector2(0f, 0.1f), new Vector2(0.2f, -0.12f), 0.04f))
+            {
+                color = shadow;
+            }
+        }
+
+        private static bool IsPointNearSegment(Vector2 point, Vector2 start, Vector2 end, float width)
+        {
+            var segment = end - start;
+            var lengthSquared = segment.sqrMagnitude;
+            if (lengthSquared <= 0.0001f)
+            {
+                return Vector2.Distance(point, start) <= width;
+            }
+
+            var t = Mathf.Clamp01(Vector2.Dot(point - start, segment) / lengthSquared);
+            var closest = start + segment * t;
+            return Vector2.Distance(point, closest) <= width;
         }
 
         private static bool IsPointInPolygon(Vector2 point, Vector2[] polygon)

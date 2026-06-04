@@ -6,10 +6,10 @@ namespace WarOfEras.Battle.Core
     public sealed class BattleLayout : MonoBehaviour
     {
         // 可选的场景布局契约：如果场景里存在这些标记点，控制器会优先使用它们覆盖代码内置坐标。
-        [SerializeField] private float unitVisualScale = 0.62f;
-        [SerializeField] private float baseVisualScale = 0.28f;
-        [SerializeField] private float towerVisualScale = 0.16f;
-        [SerializeField] private float resourceWellVisualScale = 0.18f;
+        [SerializeField] private float unitVisualScale = 1.24f;
+        [SerializeField] private float baseVisualScale = 0.56f;
+        [SerializeField] private float towerVisualScale = 0.76f;
+        [SerializeField] private float resourceWellVisualScale = 0.84f;
 
         private readonly List<string> validationErrors = new List<string>();
 

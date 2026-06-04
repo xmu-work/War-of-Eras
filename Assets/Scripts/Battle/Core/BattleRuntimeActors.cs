@@ -307,7 +307,7 @@ namespace WarOfEras.Battle.Core
     {
         private const float AttackImpulseDuration = 0.18f;
         private const float HitReactionDuration = 0.22f;
-        private const float BuilderActionRange = 1.45f;
+        private const float BuilderActionRange = 2.9f;
         private const float BuilderRepairPerSecond = 55f;
         private const float BuilderWorkEffectInterval = 0.45f;
 
@@ -390,10 +390,6 @@ namespace WarOfEras.Battle.Core
             holdSprite = spriteRenderer.sprite;
             spriteRenderer.flipX = team == 1;
             spriteRenderer.color = GetBaseTint();
-            if (IsBuilder)
-            {
-                CreateBuilderToolBadge();
-            }
 
             UpdateGroundShadow();
             UpdateSorting();

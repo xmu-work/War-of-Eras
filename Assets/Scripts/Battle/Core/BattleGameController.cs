@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -21,7 +22,13 @@ namespace WarOfEras.Battle.Core
         private const string BattleSceneName = "Battle";
         private const string DefeatBackdropPath = "Battle/Outcome/DefeatBackdrop";
         private const string VictoryBackdropPath = "Battle/Outcome/VictoryBackdrop";
+        private const string BuilderUnitMoveFramePrefix = "Battle/Facilities/Builder_move_";
+        private const string BuilderUnitAttackFramePrefix = "Battle/Facilities/Builder_attack_";
         private const string FrontlineBedClipPath = "Audio/Ambience/00_three_lane_frontline_bed_loop";
+        private const float CommandTooltipDelaySeconds = 0.5f;
+        private const int CommandTooltipFontSize = 24;
+        private const int CommandTooltipMinFontSize = 16;
+        private const int CommandTooltipMaxFontSize = 24;
         private const float EraValuePerSecond = 3.5f;
         private const float FrontlineBedVolume = 0.18f;
         private const float EraAmbienceVolume = 0.42f;
@@ -31,23 +38,28 @@ namespace WarOfEras.Battle.Core
         private const float MapTextureWidth = 2400f;
         private const float MapTextureHeight = 1350f;
         private const float MapPixelsPerUnit = 55f;
+        // 基地先从地图中心线上移地图宽度的 1/30，再按整张地图宽度下调 1/40；最终等于上移地图宽度的 1/120。
+        private const float RaisedBasePixelY = 675f - MapTextureWidth / 30f + MapTextureWidth / 40f;
         private const float CameraOrthographicSize = 5f;
         private const float CameraMinOrthographicSize = 3.4f;
         private const float CameraMaxOrthographicSize = 9f;
         private const float CameraZoomStep = 0.55f;
         private const float CameraEdgeScrollMargin = 36f;
         private const float CameraEdgeScrollSpeed = 20f;
-        private const float DefaultUnitVisualScale = 0.62f;
-        private const float DefaultTowerVisualScale = 0.16f;
-        private const float DefaultBaseVisualScale = 0.28f;
-        private const float DefaultResourceWellVisualScale = 0.18f;
+        private const float DefaultUnitVisualScale = 1.24f;
+        private const float DefaultTowerVisualScale = 0.76f;
+        private const float DefaultBaseVisualScale = 0.56f;
+        private const float DefaultResourceWellVisualScale = 0.84f;
         private const int ResourceWellCost = 120;
         private const float ResourceWellIncomeBonus = 2.5f;
         private const float ResourceWellEraValue = 65f;
         private const float BuildPlacementClickRadius = 1.05f;
-        private const float BuilderConstructionRange = 1.45f;
+        private const float BuilderConstructionRange = 2.9f;
+        private const float RouteReachableRadius = 0.62f;
+        private const float RouteRecoveryRadius = 1.15f;
         private const float UnitCombatContactPadding = 0.34f;
         private const float UnitSelectionDragThreshold = 10f;
+        private const float UnitClickSelectionRadius = 0.75f;
         private const float UnitSelectionBoxBorderThickness = 2f;
         private const float ClickMarkerDuration = 0.72f;
         private const float EnemyEraValuePerSecond = 2.85f;
@@ -200,155 +212,103 @@ namespace WarOfEras.Battle.Core
         {
             new[]
             {
-                MapPoint(190f, 675f),
-                MapPoint(260f, 510f),
-                MapPoint(390f, 405f),
-                MapPoint(700f, 405f),
-                MapPoint(1020f, 405f),
-                MapPoint(1200f, 420f),
-                MapPoint(1500f, 430f),
-                MapPoint(1780f, 435f),
-                MapPoint(2070f, 450f),
-                MapPoint(2210f, 675f)
+                MapPoint(190f, RaisedBasePixelY),
+                MapPoint(214f, 575f),
+                MapPoint(228f, 511f),
+                MapPoint(271f, 478f),
+                MapPoint(314f, 448f),
+                MapPoint(357f, 408f),
+                MapPoint(430f, 385f),
+                MapPoint(616f, 385f),
+                MapPoint(702f, 399f),
+                MapPoint(831f, 386f),
+                MapPoint(1003f, 379f),
+                MapPoint(1133f, 388f),
+                MapPoint(1348f, 384f),
+                MapPoint(1434f, 384f),
+                MapPoint(1477f, 344f),
+                MapPoint(1520f, 304f),
+                MapPoint(1563f, 355f),
+                MapPoint(1606f, 378f),
+                MapPoint(1778f, 382f),
+                MapPoint(1951f, 391f),
+                MapPoint(2037f, 397f),
+                MapPoint(2080f, 440f),
+                MapPoint(2123f, 511f),
+                MapPoint(2166f, 560f),
+                MapPoint(2210f, RaisedBasePixelY)
             },
             new[]
             {
-                MapPoint(190f, 675f),
-                MapPoint(430f, 675f),
-                MapPoint(700f, 675f),
-                MapPoint(975f, 675f),
-                MapPoint(1200f, 675f),
-                MapPoint(1425f, 675f),
-                MapPoint(1700f, 675f),
-                MapPoint(1970f, 675f),
-                MapPoint(2210f, 675f)
+                MapPoint(190f, RaisedBasePixelY),
+                MapPoint(228f, 665f),
+                MapPoint(314f, 676f),
+                MapPoint(487f, 676f),
+                MapPoint(659f, 672f),
+                MapPoint(831f, 670f),
+                MapPoint(1003f, 670f),
+                MapPoint(1176f, 669f),
+                MapPoint(1305f, 656f),
+                MapPoint(1434f, 662f),
+                MapPoint(1606f, 679f),
+                MapPoint(1778f, 668f),
+                MapPoint(1951f, 686f),
+                MapPoint(2080f, 676f),
+                MapPoint(2210f, RaisedBasePixelY)
             },
             new[]
             {
-                MapPoint(190f, 675f),
-                MapPoint(250f, 865f),
-                MapPoint(470f, 965f),
-                MapPoint(760f, 970f),
-                MapPoint(1045f, 960f),
-                MapPoint(1200f, 955f),
-                MapPoint(1430f, 965f),
-                MapPoint(1710f, 965f),
-                MapPoint(2070f, 900f),
-                MapPoint(2210f, 675f)
+                MapPoint(190f, RaisedBasePixelY),
+                MapPoint(185f, 739f),
+                MapPoint(198f, 830f),
+                MapPoint(228f, 909f),
+                MapPoint(271f, 950f),
+                MapPoint(357f, 971f),
+                MapPoint(530f, 976f),
+                MapPoint(702f, 945f),
+                MapPoint(831f, 941f),
+                MapPoint(1003f, 961f),
+                MapPoint(1133f, 968f),
+                MapPoint(1305f, 976f),
+                MapPoint(1477f, 951f),
+                MapPoint(1649f, 947f),
+                MapPoint(1822f, 965f),
+                MapPoint(1951f, 968f),
+                MapPoint(2037f, 970f),
+                MapPoint(2123f, 913f),
+                MapPoint(2166f, 873f),
+                MapPoint(2166f, 796f),
+                MapPoint(2210f, RaisedBasePixelY)
             }
         };
 
         // 这些节点和边组成整张地图的可行走图。框选士兵重定向和建筑兵派工都会从这里计算最短路径。
-        private static readonly Vector3[] RouteNodes =
+        private static readonly Vector3[] RouteConnectorNodes =
         {
-            MapPoint(190f, 675f),
-            MapPoint(260f, 510f),
-            MapPoint(390f, 405f),
-            MapPoint(700f, 405f),
-            MapPoint(1020f, 405f),
-            MapPoint(1200f, 420f),
-            MapPoint(1500f, 430f),
-            MapPoint(1780f, 435f),
-            MapPoint(2070f, 450f),
-            MapPoint(2210f, 675f),
-            MapPoint(190f, 675f),
-            MapPoint(430f, 675f),
-            MapPoint(700f, 675f),
-            MapPoint(975f, 675f),
-            MapPoint(1200f, 675f),
-            MapPoint(1425f, 675f),
-            MapPoint(1700f, 675f),
-            MapPoint(1970f, 675f),
-            MapPoint(2210f, 675f),
-            MapPoint(190f, 675f),
-            MapPoint(250f, 865f),
-            MapPoint(470f, 965f),
-            MapPoint(760f, 970f),
-            MapPoint(1045f, 960f),
-            MapPoint(1200f, 955f),
-            MapPoint(1430f, 965f),
-            MapPoint(1710f, 965f),
-            MapPoint(2070f, 900f),
-            MapPoint(2210f, 675f),
-            MapPoint(700f, 540f),
-            MapPoint(700f, 820f),
-            MapPoint(1200f, 525f),
-            MapPoint(1200f, 825f),
-            MapPoint(1660f, 535f),
-            MapPoint(1660f, 815f),
-            MapPoint(942f, 300f),
-            MapPoint(1932f, 300f),
-            MapPoint(2135f, 350f),
-            MapPoint(191f, 430f),
+            MapPoint(993f, 341f),
+            MapPoint(993f, 274f),
+            MapPoint(702f, 544f),
+            MapPoint(788f, 598f),
+            MapPoint(874f, 832f),
+            MapPoint(851f, 920f),
+            MapPoint(1391f, 457f),
+            MapPoint(1348f, 559f),
+            MapPoint(1348f, 774f),
+            MapPoint(1391f, 806f),
+            MapPoint(1434f, 836f),
+            MapPoint(1454f, 920f),
+            MapPoint(1580f, 618f),
             MapPoint(1586f, 562f),
-            MapPoint(764f, 793f),
-            MapPoint(1923f, 848f),
-            MapPoint(2243f, 1003f),
-            MapPoint(321f, 1064f),
-            MapPoint(763f, 1027f),
-            MapPoint(1291f, 1116f),
-            MapPoint(1886f, 1121f)
+            MapPoint(1133f, 1026f),
+            MapPoint(1168f, 1135f),
+            MapPoint(1973f, 1019f),
+            MapPoint(1973f, 1049f),
+            MapPoint(2209f, 841f)
         };
 
-        private static readonly RouteEdge[] RouteEdges =
-        {
-            new RouteEdge(0, 1),
-            new RouteEdge(1, 2),
-            new RouteEdge(2, 3),
-            new RouteEdge(3, 4),
-            new RouteEdge(4, 5),
-            new RouteEdge(5, 6),
-            new RouteEdge(6, 7),
-            new RouteEdge(7, 8),
-            new RouteEdge(8, 9),
-            new RouteEdge(10, 11),
-            new RouteEdge(11, 12),
-            new RouteEdge(12, 13),
-            new RouteEdge(13, 14),
-            new RouteEdge(14, 15),
-            new RouteEdge(15, 16),
-            new RouteEdge(16, 17),
-            new RouteEdge(17, 18),
-            new RouteEdge(19, 20),
-            new RouteEdge(20, 21),
-            new RouteEdge(21, 22),
-            new RouteEdge(22, 23),
-            new RouteEdge(23, 24),
-            new RouteEdge(24, 25),
-            new RouteEdge(25, 26),
-            new RouteEdge(26, 27),
-            new RouteEdge(27, 28),
-            new RouteEdge(0, 10),
-            new RouteEdge(10, 19),
-            new RouteEdge(9, 18),
-            new RouteEdge(18, 28),
-            new RouteEdge(3, 29),
-            new RouteEdge(29, 12),
-            new RouteEdge(12, 30),
-            new RouteEdge(30, 22),
-            new RouteEdge(5, 31),
-            new RouteEdge(31, 14),
-            new RouteEdge(14, 32),
-            new RouteEdge(32, 24),
-            new RouteEdge(7, 33),
-            new RouteEdge(33, 16),
-            new RouteEdge(16, 34),
-            new RouteEdge(34, 26),
-            new RouteEdge(4, 35),
-            new RouteEdge(8, 36),
-            new RouteEdge(8, 37),
-            new RouteEdge(1, 38),
-            new RouteEdge(33, 39),
-            new RouteEdge(30, 40),
-            new RouteEdge(27, 41),
-            new RouteEdge(27, 42),
-            new RouteEdge(21, 43),
-            new RouteEdge(22, 44),
-            new RouteEdge(24, 45),
-            new RouteEdge(26, 46)
-        };
-
-        private static readonly int[] PlayerRouteStartNodes = { 0, 10, 19 };
+        private static readonly Vector3[] RouteNodes = BuildRouteNodes(LaneRoutes);
+        private static readonly RouteEdge[] RouteEdges = BuildRouteEdges(RouteNodes, LaneRoutes);
+        private static readonly int[] PlayerRouteStartNodes = BuildPlayerRouteStartNodes(LaneRoutes);
 
         // 敌我双方共用同一批设施槽位；建造时会检查双方数组，避免同一位置重复占用。
         private static readonly Vector3[] SharedFacilityPositions =
@@ -439,6 +399,11 @@ namespace WarOfEras.Battle.Core
         private Text outcomeTitleText;
         private Text outcomeSubtitleText;
         private Text outcomeStatsText;
+        private RectTransform commandTooltip;
+        private Text commandTooltipText;
+        private Coroutine commandTooltipDelayRoutine;
+        private Func<string> commandTooltipProvider;
+        private Vector2 commandTooltipPointerPosition;
         private AudioSource frontlineBedSource;
         private AudioSource eraAmbienceSource;
         private AudioSource fadingEraAmbienceSource;
@@ -458,12 +423,13 @@ namespace WarOfEras.Battle.Core
         private Vector3[][] laneRoutes = LaneRoutes;
         private Vector3[] routeNodes = RouteNodes;
         private RouteEdge[] routeEdges = RouteEdges;
+        private int[] playerRouteStartNodes = PlayerRouteStartNodes;
         private Vector3[] playerTowerPositions = PlayerTowerPositions;
         private Vector3[] enemyTowerPositions = EnemyTowerPositions;
         private Vector3[] playerResourceWellPositions = PlayerResourceWellPositions;
         private Vector3[] enemyResourceWellPositions = EnemyResourceWellPositions;
-        private Vector3 playerBasePosition = MapPoint(190f, 675f);
-        private Vector3 enemyBasePosition = MapPoint(2210f, 675f);
+        private Vector3 playerBasePosition = MapPoint(190f, RaisedBasePixelY);
+        private Vector3 enemyBasePosition = MapPoint(2210f, RaisedBasePixelY);
         private float unitVisualScale = DefaultUnitVisualScale;
         private float towerVisualScale = DefaultTowerVisualScale;
         private float baseVisualScale = DefaultBaseVisualScale;
@@ -629,6 +595,146 @@ namespace WarOfEras.Battle.Core
                 (pixelX - MapTextureWidth * 0.5f) / MapPixelsPerUnit,
                 (MapTextureHeight * 0.5f - pixelY) / MapPixelsPerUnit,
                 0f);
+        }
+
+        private static Vector3[] BuildRouteNodes(Vector3[][] routes)
+        {
+            var count = RouteConnectorNodes.Length;
+            for (var i = 0; i < routes.Length; i++)
+            {
+                count += routes[i] != null ? routes[i].Length : 0;
+            }
+
+            var nodes = new List<Vector3>(count);
+            for (var i = 0; i < routes.Length; i++)
+            {
+                if (routes[i] != null)
+                {
+                    nodes.AddRange(routes[i]);
+                }
+            }
+
+            nodes.AddRange(RouteConnectorNodes);
+            return nodes.ToArray();
+        }
+
+        private static RouteEdge[] BuildRouteEdges(Vector3[] nodes, Vector3[][] routes)
+        {
+            var edges = new List<RouteEdge>();
+            var offsets = BuildRouteOffsets(routes);
+            for (var routeIndex = 0; routeIndex < routes.Length; routeIndex++)
+            {
+                var route = routes[routeIndex];
+                if (route == null)
+                {
+                    continue;
+                }
+
+                AddSequentialRouteEdges(edges, offsets[routeIndex], route.Length);
+            }
+
+            if (routes.Length >= 3
+                && routes[0] != null
+                && routes[1] != null
+                && routes[2] != null
+                && routes[0].Length > 0
+                && routes[1].Length > 0
+                && routes[2].Length > 0)
+            {
+                AddRouteEdge(edges, offsets[0], offsets[1]);
+                AddRouteEdge(edges, offsets[1], offsets[2]);
+                AddRouteEdge(edges, offsets[0] + routes[0].Length - 1, offsets[1] + routes[1].Length - 1);
+                AddRouteEdge(edges, offsets[1] + routes[1].Length - 1, offsets[2] + routes[2].Length - 1);
+            }
+
+            AddRouteConnection(edges, nodes, MapPoint(1003f, 379f), MapPoint(993f, 341f), MapPoint(993f, 274f));
+            AddRouteConnection(edges, nodes, MapPoint(702f, 399f), MapPoint(702f, 544f), MapPoint(788f, 598f), MapPoint(831f, 670f), MapPoint(874f, 832f), MapPoint(851f, 920f), MapPoint(831f, 941f));
+            AddRouteConnection(edges, nodes, MapPoint(1348f, 384f), MapPoint(1391f, 457f), MapPoint(1348f, 559f), MapPoint(1305f, 656f), MapPoint(1348f, 774f), MapPoint(1391f, 806f), MapPoint(1434f, 836f), MapPoint(1454f, 920f), MapPoint(1477f, 951f));
+            AddRouteConnection(edges, nodes, MapPoint(1606f, 679f), MapPoint(1580f, 618f), MapPoint(1586f, 562f));
+            AddRouteConnection(edges, nodes, MapPoint(1133f, 968f), MapPoint(1133f, 1026f), MapPoint(1168f, 1135f));
+            AddRouteConnection(edges, nodes, MapPoint(1951f, 968f), MapPoint(1973f, 1019f), MapPoint(1973f, 1049f));
+            AddRouteConnection(edges, nodes, MapPoint(2166f, 873f), MapPoint(2209f, 841f), MapPoint(2166f, 796f));
+            return edges.ToArray();
+        }
+
+        private static int[] BuildPlayerRouteStartNodes(Vector3[][] routes)
+        {
+            var offsets = BuildRouteOffsets(routes);
+            var starts = new List<int>(routes.Length);
+            for (var i = 0; i < routes.Length; i++)
+            {
+                if (routes[i] != null && routes[i].Length > 0)
+                {
+                    starts.Add(offsets[i]);
+                }
+            }
+
+            return starts.ToArray();
+        }
+
+        private static int[] BuildRouteOffsets(Vector3[][] routes)
+        {
+            var offsets = new int[routes.Length];
+            var nextOffset = 0;
+            for (var i = 0; i < routes.Length; i++)
+            {
+                offsets[i] = nextOffset;
+                nextOffset += routes[i] != null ? routes[i].Length : 0;
+            }
+
+            return offsets;
+        }
+
+        private static void AddSequentialRouteEdges(List<RouteEdge> edges, int startIndex, int length)
+        {
+            for (var i = 0; i < length - 1; i++)
+            {
+                AddRouteEdge(edges, startIndex + i, startIndex + i + 1);
+            }
+        }
+
+        private static void AddRouteConnection(List<RouteEdge> edges, Vector3[] nodes, params Vector3[] points)
+        {
+            for (var i = 0; i < points.Length - 1; i++)
+            {
+                AddRouteEdge(edges, FindClosestRouteNode(nodes, points[i]), FindClosestRouteNode(nodes, points[i + 1]));
+            }
+        }
+
+        private static int FindClosestRouteNode(Vector3[] nodes, Vector3 point)
+        {
+            var bestIndex = -1;
+            var bestDistance = float.PositiveInfinity;
+            for (var i = 0; i < nodes.Length; i++)
+            {
+                var distance = (nodes[i] - point).sqrMagnitude;
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    bestIndex = i;
+                }
+            }
+
+            return bestIndex;
+        }
+
+        private static void AddRouteEdge(List<RouteEdge> edges, int a, int b)
+        {
+            if (a < 0 || b < 0 || a == b)
+            {
+                return;
+            }
+
+            for (var i = 0; i < edges.Count; i++)
+            {
+                var edge = edges[i];
+                if ((edge.A == a && edge.B == b) || (edge.A == b && edge.B == a))
+                {
+                    return;
+                }
+            }
+
+            edges.Add(new RouteEdge(a, b));
         }
 
         public Vector3 GetLaneSpawnPosition(int team, int laneIndex)
@@ -1334,6 +1440,17 @@ namespace WarOfEras.Battle.Core
             visualSlot = Mathf.Clamp(visualSlot, 0, visualSet.UnitFrameFolders.Length - 1);
             var frameFolder = visualSet.UnitFrameFolders[visualSlot];
             var fallbackFolder = AgeVisualSets[0].UnitFrameFolders[Mathf.Clamp(visualSlot, 0, AgeVisualSets[0].UnitFrameFolders.Length - 1)];
+            var moveFramePrefix = visualSet.UnitRoot + "/" + frameFolder + "/move_";
+            var attackFramePrefix = visualSet.UnitRoot + "/" + frameFolder + "/attack_";
+            var fallbackMoveFramePrefix = AgeVisualSets[0].UnitRoot + "/" + fallbackFolder + "/move_";
+            var fallbackAttackFramePrefix = AgeVisualSets[0].UnitRoot + "/" + fallbackFolder + "/attack_";
+            if (role == UnitRole.Builder)
+            {
+                moveFramePrefix = BuilderUnitMoveFramePrefix;
+                attackFramePrefix = BuilderUnitAttackFramePrefix;
+                fallbackMoveFramePrefix = null;
+                fallbackAttackFramePrefix = null;
+            }
 
             return new UnitDefinition(
                 displayName,
@@ -1346,8 +1463,8 @@ namespace WarOfEras.Battle.Core
                 attackInterval,
                 scale,
                 Mathf.Max(1, Mathf.RoundToInt(cost * 0.35f)),
-                LoadFrames(visualSet.UnitRoot + "/" + frameFolder + "/move_", 5, 100f, AgeVisualSets[0].UnitRoot + "/" + fallbackFolder + "/move_"),
-                LoadFrames(visualSet.UnitRoot + "/" + frameFolder + "/attack_", 5, 100f, AgeVisualSets[0].UnitRoot + "/" + fallbackFolder + "/attack_"),
+                LoadFrames(moveFramePrefix, 5, 100f, fallbackMoveFramePrefix),
+                LoadFrames(attackFramePrefix, 5, 100f, fallbackAttackFramePrefix),
                 tint,
                 role);
         }
@@ -1525,8 +1642,8 @@ namespace WarOfEras.Battle.Core
             }
 
             var basesRoot = EnsureMarker(root, "Layout/Bases");
-            EnsureMarker(basesRoot, "PlayerBasePoint").position = MapPoint(190f, 675f);
-            EnsureMarker(basesRoot, "EnemyBasePoint").position = MapPoint(2210f, 675f);
+            EnsureMarker(basesRoot, "PlayerBasePoint").position = MapPoint(190f, RaisedBasePixelY);
+            EnsureMarker(basesRoot, "EnemyBasePoint").position = MapPoint(2210f, RaisedBasePixelY);
 
             var towersRoot = EnsureMarker(root, "Layout/Towers");
             SyncPrefixedMarkerChildren(towersRoot, "PlayerTowerSlot_", PlayerTowerPositions);
@@ -1609,37 +1726,17 @@ namespace WarOfEras.Battle.Core
 
         private void RebuildRouteGraphFromLayout()
         {
-            if (laneRoutes.Length < 3 || laneRoutes[0].Length < 10 || laneRoutes[1].Length < 9 || laneRoutes[2].Length < 10)
+            if (laneRoutes.Length < 3 || laneRoutes[0].Length < 2 || laneRoutes[1].Length < 2 || laneRoutes[2].Length < 2)
             {
                 routeNodes = RouteNodes;
                 routeEdges = RouteEdges;
+                playerRouteStartNodes = PlayerRouteStartNodes;
                 return;
             }
 
-            var nodes = new List<Vector3>(35);
-            nodes.AddRange(laneRoutes[0]);
-            nodes.AddRange(laneRoutes[1]);
-            nodes.AddRange(laneRoutes[2]);
-            nodes.Add(MapPoint(700f, 540f));
-            nodes.Add(MapPoint(700f, 820f));
-            nodes.Add(MapPoint(1200f, 525f));
-            nodes.Add(MapPoint(1200f, 825f));
-            nodes.Add(MapPoint(1660f, 535f));
-            nodes.Add(MapPoint(1660f, 815f));
-            nodes.Add(MapPoint(942f, 300f));
-            nodes.Add(MapPoint(1932f, 300f));
-            nodes.Add(MapPoint(2135f, 350f));
-            nodes.Add(MapPoint(191f, 430f));
-            nodes.Add(MapPoint(1586f, 562f));
-            nodes.Add(MapPoint(764f, 793f));
-            nodes.Add(MapPoint(1923f, 848f));
-            nodes.Add(MapPoint(2243f, 1003f));
-            nodes.Add(MapPoint(321f, 1064f));
-            nodes.Add(MapPoint(763f, 1027f));
-            nodes.Add(MapPoint(1291f, 1116f));
-            nodes.Add(MapPoint(1886f, 1121f));
-            routeNodes = nodes.ToArray();
-            routeEdges = RouteEdges;
+            routeNodes = BuildRouteNodes(laneRoutes);
+            routeEdges = BuildRouteEdges(routeNodes, laneRoutes);
+            playerRouteStartNodes = BuildPlayerRouteStartNodes(laneRoutes);
         }
 
         private UnitDefinition[] BuildEnemyDefinitions(UnitDefinition[] baseDefinitions)
@@ -2198,6 +2295,7 @@ namespace WarOfEras.Battle.Core
             BuildStartHintPanel(root);
             BuildStatusPanel(root);
             BuildCommandPanel(root);
+            BuildCommandTooltip(root);
             BuildOutcomeOverlay(canvasObject.transform);
         }
 
@@ -2320,40 +2418,189 @@ namespace WarOfEras.Battle.Core
             var panel = CreateRect("Command Dock", root);
             panel.anchorMin = new Vector2(0.23f, 0f);
             panel.anchorMax = new Vector2(1f, 0f);
-            panel.sizeDelta = new Vector2(0f, 184f);
-            panel.anchoredPosition = new Vector2(0f, 92f);
+            panel.sizeDelta = new Vector2(0f, 206f);
+            panel.anchoredPosition = new Vector2(0f, 103f);
 
-            var grid = panel.gameObject.AddComponent<GridLayoutGroup>();
-            grid.padding = new RectOffset(8, 8, 8, 8);
-            grid.spacing = new Vector2(8f, 10f);
-            grid.cellSize = new Vector2(154f, 48f);
-            grid.childAlignment = TextAnchor.LowerRight;
-            grid.constraint = GridLayoutGroup.Constraint.FixedRowCount;
-            grid.constraintCount = 3;
+            var layout = panel.gameObject.AddComponent<HorizontalLayoutGroup>();
+            layout.padding = new RectOffset(10, 10, 8, 8);
+            layout.spacing = 12f;
+            layout.childAlignment = TextAnchor.MiddleRight;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = true;
+
+            var unitGrid = CreateCommandButtonGrid(panel, "Soldier Image Buttons", new Vector2(78f, 78f), 3, 270f);
+            var facilityGrid = CreateCommandButtonGrid(panel, "Facility Image Buttons", new Vector2(78f, 78f), 2, 190f);
+            var utilityGrid = CreateCommandButtonGrid(panel, "Utility Text Buttons", new Vector2(118f, 48f), 3, 386f);
 
             for (var i = 0; i < playerUnitDefinitions.Length; i++)
             {
                 var definition = playerUnitDefinitions[i];
                 var slotIndex = i;
-                var button = CreateButton(panel, definition.Key, FormatUnitButtonLabel(definition), () => SelectPlayerUnit(unitButtons[slotIndex].Definition), new Color(0.43f, 0.31f, 0.17f, 1f));
-                unitButtons.Add(new UnitButtonBinding(button, GetButtonLabel(button), definition));
+                var button = CreateImageButton(
+                    unitGrid,
+                    definition.Key,
+                    GetUnitButtonSprite(definition),
+                    () => SelectPlayerUnit(unitButtons[slotIndex].Definition),
+                    new Color(0.43f, 0.31f, 0.17f, 1f),
+                    () => FormatUnitTooltip(unitButtons[slotIndex].Definition));
+                unitButtons.Add(new UnitButtonBinding(button, GetButtonLabel(button), GetButtonIcon(button), definition));
             }
 
             for (var i = 0; i < currentTowerDefinitions.Length; i++)
             {
                 var towerIndex = i;
                 var definition = currentTowerDefinitions[i];
-                var button = CreateButton(panel, "Tower " + (i + 1), FormatTowerButtonLabel(definition), () => SelectTowerForBuild(towerIndex), new Color(0.31f, 0.43f, 0.45f, 1f));
-                towerButtons.Add(new TowerButtonBinding(button, GetButtonLabel(button), towerIndex, definition));
+                var button = CreateImageButton(
+                    facilityGrid,
+                    "Tower " + (i + 1),
+                    GetTowerButtonSprite(towerIndex),
+                    () => SelectTowerForBuild(towerIndex),
+                    new Color(0.31f, 0.43f, 0.45f, 1f),
+                    () => FormatTowerTooltip(GetTowerDefinition(towerIndex)));
+                towerButtons.Add(new TowerButtonBinding(button, GetButtonLabel(button), GetButtonIcon(button), towerIndex, definition));
             }
 
-            resourceWellButton = CreateButton(panel, "Resource Well", FormatResourceWellButtonLabel(), TryBuildResourceWell, new Color(0.24f, 0.46f, 0.36f, 1f));
-            agePowerButton = CreateButton(panel, "Age Power", AgePowers[ageIndex].DisplayName, UseAgePower, new Color(0.58f, 0.31f, 0.18f, 1f));
-            shieldButton = CreateButton(panel, "Shield Barrier", "\u62a4\u76fe\u5c4f\u969c", UseShieldBarrier, new Color(0.24f, 0.42f, 0.58f, 1f));
-            mobilizationButton = CreateButton(panel, "Mobilization", "\u6218\u4e89\u52a8\u5458", UseMobilization, new Color(0.52f, 0.44f, 0.18f, 1f));
-            attackUpgradeButton = CreateButton(panel, "Attack Evolution", "\u8fdb\u653b\u8fdb\u5316", () => UpgradeAge(EvolutionPath.Attack), new Color(0.62f, 0.22f, 0.16f, 1f));
-            defenseUpgradeButton = CreateButton(panel, "Defense Evolution", "\u9632\u5b88\u8fdb\u5316", () => UpgradeAge(EvolutionPath.Defense), new Color(0.22f, 0.38f, 0.56f, 1f));
-            restartButton = CreateButton(panel, "Restart", "\u91cd\u7f6e\u6218\u6597", RestartBattle, new Color(0.38f, 0.32f, 0.46f, 1f));
+            resourceWellButton = CreateImageButton(
+                facilityGrid,
+                "Resource Well",
+                ResourceWellBuiltSprite,
+                TryBuildResourceWell,
+                new Color(0.24f, 0.46f, 0.36f, 1f),
+                FormatResourceWellTooltip);
+
+            agePowerButton = CreateButton(utilityGrid, "Age Power", AgePowers[ageIndex].DisplayName, UseAgePower, new Color(0.58f, 0.31f, 0.18f, 1f));
+            shieldButton = CreateButton(utilityGrid, "Shield Barrier", "\u62a4\u76fe\u5c4f\u969c", UseShieldBarrier, new Color(0.24f, 0.42f, 0.58f, 1f));
+            mobilizationButton = CreateButton(utilityGrid, "Mobilization", "\u6218\u4e89\u52a8\u5458", UseMobilization, new Color(0.52f, 0.44f, 0.18f, 1f));
+            attackUpgradeButton = CreateButton(utilityGrid, "Attack Evolution", "\u8fdb\u653b\u8fdb\u5316", () => UpgradeAge(EvolutionPath.Attack), new Color(0.62f, 0.22f, 0.16f, 1f));
+            defenseUpgradeButton = CreateButton(utilityGrid, "Defense Evolution", "\u9632\u5b88\u8fdb\u5316", () => UpgradeAge(EvolutionPath.Defense), new Color(0.22f, 0.38f, 0.56f, 1f));
+            restartButton = CreateButton(utilityGrid, "Restart", "\u91cd\u7f6e\u6218\u6597", RestartBattle, new Color(0.38f, 0.32f, 0.46f, 1f));
+        }
+
+        private RectTransform CreateCommandButtonGrid(RectTransform parent, string name, Vector2 cellSize, int columnCount, float preferredWidth)
+        {
+            var gridRoot = CreateRect(name, parent);
+            var layoutElement = gridRoot.gameObject.AddComponent<LayoutElement>();
+            layoutElement.preferredWidth = preferredWidth;
+            layoutElement.minWidth = preferredWidth;
+            layoutElement.flexibleHeight = 1f;
+
+            var grid = gridRoot.gameObject.AddComponent<GridLayoutGroup>();
+            grid.padding = new RectOffset(6, 6, 6, 6);
+            grid.spacing = new Vector2(8f, 8f);
+            grid.cellSize = cellSize;
+            grid.childAlignment = TextAnchor.MiddleCenter;
+            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            grid.constraintCount = Mathf.Max(1, columnCount);
+            return gridRoot;
+        }
+
+        private void BuildCommandTooltip(RectTransform root)
+        {
+            commandTooltip = CreatePanel("Command Detail Tooltip", root, new Color(0.08f, 0.1f, 0.09f, 0.96f));
+            var tooltipImage = commandTooltip.GetComponent<Image>();
+            if (tooltipImage != null)
+            {
+                tooltipImage.raycastTarget = false;
+            }
+
+            commandTooltip.anchorMin = new Vector2(0.5f, 0.5f);
+            commandTooltip.anchorMax = new Vector2(0.5f, 0.5f);
+            commandTooltip.pivot = Vector2.zero;
+            commandTooltip.sizeDelta = new Vector2(495f, 285f);
+            commandTooltip.gameObject.SetActive(false);
+
+            var outline = commandTooltip.gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color(0.88f, 0.68f, 0.32f, 0.72f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            commandTooltipText = CreateText(commandTooltip, "Command Detail Text", string.Empty, CommandTooltipFontSize, FontStyle.Bold, TextAnchor.UpperLeft);
+            commandTooltipText.color = new Color(0.96f, 0.91f, 0.78f, 1f);
+            commandTooltipText.resizeTextForBestFit = true;
+            commandTooltipText.resizeTextMinSize = CommandTooltipMinFontSize;
+            commandTooltipText.resizeTextMaxSize = CommandTooltipMaxFontSize;
+            commandTooltipText.raycastTarget = false;
+            commandTooltipText.rectTransform.anchorMin = Vector2.zero;
+            commandTooltipText.rectTransform.anchorMax = Vector2.one;
+            commandTooltipText.rectTransform.offsetMin = new Vector2(21f, 18f);
+            commandTooltipText.rectTransform.offsetMax = new Vector2(-21f, -18f);
+        }
+
+        private void ShowCommandTooltip(string message, Vector2 screenPosition)
+        {
+            if (commandTooltip == null || commandTooltipText == null || string.IsNullOrEmpty(message))
+            {
+                return;
+            }
+
+            commandTooltipText.text = message;
+            commandTooltip.gameObject.SetActive(true);
+            commandTooltip.SetAsLastSibling();
+            MoveCommandTooltip(screenPosition);
+        }
+
+        private void BeginCommandTooltipHover(Func<string> tooltipProvider, Vector2 screenPosition)
+        {
+            commandTooltipProvider = tooltipProvider;
+            commandTooltipPointerPosition = screenPosition;
+            if (commandTooltipDelayRoutine != null)
+            {
+                StopCoroutine(commandTooltipDelayRoutine);
+            }
+
+            if (commandTooltip != null)
+            {
+                commandTooltip.gameObject.SetActive(false);
+            }
+
+            commandTooltipDelayRoutine = StartCoroutine(ShowCommandTooltipAfterDelay());
+        }
+
+        private IEnumerator ShowCommandTooltipAfterDelay()
+        {
+            yield return new WaitForSecondsRealtime(CommandTooltipDelaySeconds);
+            commandTooltipDelayRoutine = null;
+            ShowCommandTooltip(commandTooltipProvider?.Invoke(), commandTooltipPointerPosition);
+        }
+
+        private void HideCommandTooltip()
+        {
+            if (commandTooltipDelayRoutine != null)
+            {
+                StopCoroutine(commandTooltipDelayRoutine);
+                commandTooltipDelayRoutine = null;
+            }
+
+            commandTooltipProvider = null;
+            if (commandTooltip != null)
+            {
+                commandTooltip.gameObject.SetActive(false);
+            }
+        }
+
+        private void MoveCommandTooltip(Vector2 screenPosition)
+        {
+            if (commandTooltip == null)
+            {
+                return;
+            }
+
+            var parent = commandTooltip.parent as RectTransform;
+            if (parent == null)
+            {
+                commandTooltip.position = new Vector3(screenPosition.x, screenPosition.y, 0f);
+                return;
+            }
+
+            Vector2 localPoint;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(parent, screenPosition, null, out localPoint);
+            var anchoredPosition = localPoint + new Vector2(18f, 18f);
+            var parentRect = parent.rect;
+            var size = commandTooltip.sizeDelta;
+            anchoredPosition.x = Mathf.Clamp(anchoredPosition.x, parentRect.xMin + 8f, parentRect.xMax - size.x - 8f);
+            anchoredPosition.y = Mathf.Clamp(anchoredPosition.y, parentRect.yMin + 8f, parentRect.yMax - size.y - 8f);
+            commandTooltip.anchoredPosition = anchoredPosition;
         }
 
         private void BuildStatusPanel(RectTransform root)
@@ -2558,7 +2805,7 @@ namespace WarOfEras.Battle.Core
 
             activeBuildPlacement = kind;
             ShowBuildPlacementPreviews(kind);
-            status = "\u9009\u62e9" + GetBuildPlacementName(kind) + "\u4fee\u5efa\u70b9\uff1a\u70b9\u51fb\u6807\u5fd7\u540e\u4f1a\u6d3e\u51fa\u5efa\u7b51\u5175\uff0c\u62b5\u8fbe\u8303\u56f4\u5185\u624d\u4f1a\u5f00\u5de5\u3002";
+            status = "\u9009\u62e9" + GetBuildPlacementName(kind) + "\u4fee\u5efa\u70b9\uff1a\u8303\u56f4\u5708\u8868\u793a\u5efa\u7b51\u5175\u7684\u65bd\u5de5\u534a\u5f84\uff0c\u70b9\u51fb\u6807\u5fd7\u540e\u4f1a\u6d3e\u51fa\u5efa\u7b51\u5175\u3002";
         }
 
         private void ConfirmBuildPlacement(int slotIndex)
@@ -2602,13 +2849,53 @@ namespace WarOfEras.Battle.Core
                     continue;
                 }
 
+                var previewRoot = new GameObject(GetBuildPlacementName(kind) + " Build Preview " + (i + 1)).transform;
+                previewRoot.SetParent(buildPreviewRoot, false);
+                previewRoot.position = positions[i];
+
+                CreateBuilderConstructionRangePreview(previewRoot, positions[i], kind, i);
+
                 var marker = CreateSprite(GetBuildPlacementName(kind) + " Build Prompt " + (i + 1), GetBuildPlacementMarkerSprite(kind), positions[i], 92 + i);
-                marker.transform.SetParent(buildPreviewRoot, true);
+                marker.transform.SetParent(previewRoot, true);
                 marker.transform.localScale = Vector3.one * (kind == BuildPlacementKind.ResourceWell ? 0.78f : 0.76f);
                 marker.color = Color.white;
                 marker.gameObject.AddComponent<BattleBuildPromptPulse>().Configure(0.82f, 1.18f, 2.7f);
-                buildPlacementPreviews.Add(new BuildPlacementPreview(marker.gameObject, i));
+                buildPlacementPreviews.Add(new BuildPlacementPreview(previewRoot.gameObject, i));
             }
+        }
+
+        private void CreateBuilderConstructionRangePreview(Transform parent, Vector3 center, BuildPlacementKind kind, int index)
+        {
+            var tint = kind == BuildPlacementKind.ResourceWell
+                ? new Color(0.25f, 1f, 0.55f, 1f)
+                : new Color(1f, 0.74f, 0.24f, 1f);
+
+            var rangeDisc = CreateSprite("Builder Construction Range Fill", VfxCircleSprite, center, 88 + index);
+            rangeDisc.transform.SetParent(parent, true);
+            rangeDisc.color = new Color(tint.r, tint.g, tint.b, 0.16f);
+            var spriteDiameter = Mathf.Max(0.01f, rangeDisc.sprite.bounds.size.x);
+            rangeDisc.transform.localScale = Vector3.one * (BuilderConstructionRange * 2f / spriteDiameter);
+
+            CreateVfxLine(
+                parent,
+                "Builder Construction Range Ring",
+                BuildCirclePoints(center, BuilderConstructionRange, 72),
+                new Color(tint.r, tint.g, tint.b, 0.72f),
+                0.04f,
+                91 + index);
+        }
+
+        private static Vector3[] BuildCirclePoints(Vector3 center, float radius, int segments)
+        {
+            var pointCount = Mathf.Max(12, segments) + 1;
+            var points = new Vector3[pointCount];
+            for (var i = 0; i < pointCount; i++)
+            {
+                var angle = (i / (float)(pointCount - 1)) * Mathf.PI * 2f;
+                points[i] = center + new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius, 0f);
+            }
+
+            return points;
         }
 
         private Sprite GetBuildPlacementMarkerSprite(BuildPlacementKind kind)
@@ -2751,13 +3038,17 @@ namespace WarOfEras.Battle.Core
                 }
 
                 var worldPoint = GetMouseWorldPoint();
-                SpawnClickPointMarker(worldPoint);
                 if (selectedPlayerUnits.Count > 0)
                 {
                     CommandSelectedPlayerUnitsTo(worldPoint);
                 }
+                else if (TrySelectSinglePlayerUnitAt(worldPoint))
+                {
+                    return;
+                }
                 else
                 {
+                    SpawnClickPointMarker(worldPoint);
                     SelectDefaultSpawnLaneAt(worldPoint);
                 }
 
@@ -2815,8 +3106,51 @@ namespace WarOfEras.Battle.Core
             }
 
             status = selectedPlayerUnits.Count > 0
-                ? "\u5df2\u6846\u9009 " + selectedPlayerUnits.Count + " \u540d\u58eb\u5175\uff0c\u70b9\u51fb\u9053\u8def\u4e0b\u8fbe\u884c\u519b\u76ee\u6807\uff0c\u53f3\u952e\u89e3\u9664\u7ba1\u63a7\u3002"
+                ? "\u5df2\u9009\u4e2d " + selectedPlayerUnits.Count + " \u540d\u58eb\u5175\uff0c\u70b9\u51fb\u9053\u8def\u4e0b\u8fbe\u884c\u519b\u76ee\u6807\uff0c\u53f3\u952e\u89e3\u9664\u7ba1\u63a7\u3002"
                 : "\u6846\u9009\u8303\u56f4\u5185\u6ca1\u6709\u53ef\u6307\u6325\u7684\u58eb\u5175\u3002";
+        }
+
+        private bool TrySelectSinglePlayerUnitAt(Vector3 worldPoint)
+        {
+            var unit = FindPlayerUnitAt(worldPoint);
+            if (unit == null)
+            {
+                return false;
+            }
+
+            ClearSelectedPlayerUnits();
+            selectedPlayerUnits.Add(unit);
+            unit.SetSelectionVisible(true);
+            status = "\u5df2\u9009\u4e2d 1 \u540d\u58eb\u5175\uff0c\u70b9\u51fb\u9053\u8def\u4e0b\u8fbe\u884c\u519b\u76ee\u6807\uff0c\u53f3\u952e\u89e3\u9664\u7ba1\u63a7\u3002";
+            return true;
+        }
+
+        private BattleUnit FindPlayerUnitAt(Vector3 worldPoint)
+        {
+            BattleUnit bestUnit = null;
+            var bestDistanceSqr = UnitClickSelectionRadius * UnitClickSelectionRadius;
+            for (var i = 0; i < units.Count; i++)
+            {
+                var unit = units[i];
+                if (unit == null || !unit.IsAlive || unit.Team != 0)
+                {
+                    continue;
+                }
+
+                var unitPosition = unit.transform.position;
+                var offsetX = worldPoint.x - unitPosition.x;
+                var offsetY = worldPoint.y - unitPosition.y;
+                var distanceSqr = offsetX * offsetX + offsetY * offsetY;
+                if (distanceSqr > bestDistanceSqr)
+                {
+                    continue;
+                }
+
+                bestDistanceSqr = distanceSqr;
+                bestUnit = unit;
+            }
+
+            return bestUnit;
         }
 
         private void SelectDefaultSpawnLaneAt(Vector3 worldPoint)
@@ -2836,7 +3170,7 @@ namespace WarOfEras.Battle.Core
             PruneSelectedPlayerUnits();
             if (selectedPlayerUnits.Count == 0)
             {
-                status = "\u8bf7\u5148\u62d6\u62fd\u6846\u9009\u58eb\u5175\uff0c\u518d\u70b9\u51fb\u9053\u8def\u4e0b\u8fbe\u884c\u519b\u76ee\u6807\u3002";
+                status = "\u8bf7\u5148\u70b9\u51fb\u6216\u62d6\u62fd\u6846\u9009\u58eb\u5175\uff0c\u518d\u70b9\u51fb\u9053\u8def\u4e0b\u8fbe\u884c\u519b\u76ee\u6807\u3002";
                 return;
             }
 
@@ -2846,6 +3180,7 @@ namespace WarOfEras.Battle.Core
                 return;
             }
 
+            SpawnClickPointMarker(target.Position);
             var redirectedCount = RedirectPlayerUnitsToTarget(target, selectedPlayerUnits);
             if (redirectedCount <= 0)
             {
@@ -2853,7 +3188,7 @@ namespace WarOfEras.Battle.Core
                 return;
             }
 
-            status = "\u5df2\u547d\u4ee4 " + redirectedCount + " \u540d\u6846\u9009\u58eb\u5175\u524d\u5f80\u76ee\u6807\u70b9\uff0c\u53f3\u952e\u53ef\u89e3\u9664\u7ba1\u63a7\u6807\u8bc6\u3002";
+            status = "\u5df2\u547d\u4ee4 " + redirectedCount + " \u540d\u5df2\u9009\u58eb\u5175\u524d\u5f80\u76ee\u6807\u70b9\uff0c\u53f3\u952e\u53ef\u89e3\u9664\u7ba1\u63a7\u6807\u8bc6\u3002";
         }
 
         private void ClearSelectedPlayerUnits()
@@ -3037,7 +3372,7 @@ namespace WarOfEras.Battle.Core
         {
             laneIndex = -1;
             var bestLane = -1;
-            var bestDistance = 1.15f;
+            var bestDistance = RouteRecoveryRadius;
 
             for (var candidateLaneIndex = 0; candidateLaneIndex < laneRoutes.Length; candidateLaneIndex++)
             {
@@ -3094,6 +3429,11 @@ namespace WarOfEras.Battle.Core
 
         private bool TryFindReachableTarget(Vector3 worldPoint, out RouteTarget target)
         {
+            return TryFindReachableTarget(worldPoint, RouteReachableRadius, out target);
+        }
+
+        private bool TryFindReachableTarget(Vector3 worldPoint, float maxSnapDistance, out RouteTarget target)
+        {
             // 把鼠标点吸附到最近的路线边上，后续最短路只在路线图内计算，避免单位走进不可达区域。
             var bestDistance = float.PositiveInfinity;
             var bestA = -1;
@@ -3114,7 +3454,7 @@ namespace WarOfEras.Battle.Core
                 }
             }
 
-            if (bestA < 0)
+            if (bestA < 0 || bestDistance > maxSnapDistance)
             {
                 target = default(RouteTarget);
                 return false;
@@ -3135,7 +3475,7 @@ namespace WarOfEras.Battle.Core
                     continue;
                 }
 
-                if (!TryFindReachableTarget(unit.transform.position, out var start)
+                if (!TryFindReachableTarget(unit.transform.position, RouteRecoveryRadius, out var start)
                     || !TryBuildShortestRoute(start, target, out var points, out var ignoredCost))
                 {
                     continue;
@@ -3425,29 +3765,80 @@ namespace WarOfEras.Battle.Core
             return EraThresholds[index];
         }
 
-        private string FormatUnitButtonLabel(UnitDefinition definition)
+        private static Sprite GetUnitButtonSprite(UnitDefinition definition)
         {
-            return definition.DisplayName + "\n" + GetUnitCost(definition) + " \u91d1\u5e01";
+            return definition != null && definition.MoveFrames != null && definition.MoveFrames.Length > 0
+                ? definition.MoveFrames[0]
+                : null;
         }
 
-        private string FormatTowerButtonLabel()
+        private Sprite GetTowerButtonSprite(int towerIndex)
         {
-            return FormatTowerButtonLabel(currentTowerDefinition);
+            var frames = GetTowerFrames(towerIndex);
+            return frames != null && frames.Length > 0 ? frames[0] : WhiteSprite;
         }
 
-        private string FormatTowerButtonLabel(TowerDefinition definition)
+        private string FormatUnitTooltip(UnitDefinition definition)
         {
             if (definition == null)
             {
-                return "\u6d3e\u5de5\u4fee\u5854";
+                return string.Empty;
             }
 
-            return "\u5de5\u5175\u4fee\u5efa" + definition.DisplayName + "\n" + definition.Cost + " \u91d1\u5e01";
+            var roleText = definition.Role == UnitRole.Builder ? "\u5efa\u7b51\u5175" : "\u6218\u6597\u58eb\u5175";
+            var detail = definition.DisplayName
+                + "\n\u7c7b\u578b\uff1a" + roleText
+                + "\n\u91d1\u94b1\u6d88\u8017\uff1a" + GetUnitCost(definition) + " \u91d1\u5e01"
+                + "\n\u751f\u547d\uff1a" + Mathf.CeilToInt(definition.MaxHealth)
+                + "\n\u4f24\u5bb3\uff1a" + FormatStat(definition.Damage)
+                + "\n\u5c04\u7a0b\uff1a" + FormatStat(definition.AttackRange)
+                + "\n\u653b\u51fb\u95f4\u9694\uff1a" + FormatStat(definition.AttackInterval) + "s"
+                + "\n\u79fb\u52a8\u901f\u5ea6\uff1a" + FormatStat(definition.Speed);
+
+            if (definition.Role == UnitRole.Builder)
+            {
+                detail += "\n\u80fd\u529b\uff1a\u540c\u4e00\u7c7b\u5efa\u7b51\u5175\u53ef\u4fee\u5efa\u9632\u5fa1\u5854\u548c\u8d44\u6e90\u70b9\uff0c\u5e76\u81ea\u52a8\u4fee\u590d\u9644\u8fd1\u53d7\u635f\u8bbe\u65bd\u3002";
+            }
+
+            return detail;
         }
 
-        private string FormatResourceWellButtonLabel()
+        private string FormatTowerTooltip(TowerDefinition definition)
         {
-            return "\u5de5\u5175\u5360\u70b9\n" + ResourceWellCost + " \u91d1\u5e01";
+            if (definition == null)
+            {
+                return string.Empty;
+            }
+
+            return definition.DisplayName
+                + "\n\u7c7b\u578b\uff1a\u9632\u5fa1\u5854"
+                + "\n\u91d1\u94b1\u6d88\u8017\uff1a" + definition.Cost + " \u91d1\u5e01"
+                + "\n\u751f\u547d\uff1a" + Mathf.CeilToInt(EstimateTowerMaxHealth(definition))
+                + "\n\u4f24\u5bb3\uff1a" + FormatStat(definition.Damage)
+                + "\n\u5c04\u7a0b\uff1a" + FormatStat(definition.Range)
+                + "\n\u653b\u51fb\u95f4\u9694\uff1a" + FormatStat(definition.AttackInterval) + "s"
+                + "\n\u65bd\u5de5\uff1a\u7531\u7edf\u4e00\u5efa\u7b51\u5175\u524d\u5f80\u8bbe\u65bd\u70b9\u4fee\u5efa\u3002";
+        }
+
+        private string FormatResourceWellTooltip()
+        {
+            return "\u8d44\u6e90\u70b9"
+                + "\n\u7c7b\u578b\uff1a\u8d44\u6e90\u8bbe\u65bd"
+                + "\n\u91d1\u94b1\u6d88\u8017\uff1a" + ResourceWellCost + " \u91d1\u5e01"
+                + "\n\u751f\u547d\uff1a360"
+                + "\n\u6536\u76ca\uff1a+" + ResourceWellIncomeBonus.ToString("0.#") + " \u91d1\u5e01/s"
+                + "\n\u65f6\u4ee3\u503c\uff1a+" + ResourceWellEraValue.ToString("0.#")
+                + "\n\u65bd\u5de5\uff1a\u7531\u7edf\u4e00\u5efa\u7b51\u5175\u524d\u5f80\u8bbe\u65bd\u70b9\u4fee\u5efa\u3002";
+        }
+
+        private static float EstimateTowerMaxHealth(TowerDefinition definition)
+        {
+            return definition == null ? 260f : 220f + definition.Damage * 6f + definition.Range * 20f;
+        }
+
+        private static string FormatStat(float value)
+        {
+            return value.ToString(value >= 10f ? "0" : "0.##");
         }
 
         private string GetEvolutionPathLabel()
@@ -3470,10 +3861,7 @@ namespace WarOfEras.Battle.Core
                 var binding = unitButtons[i];
                 binding.Definition = playerUnitDefinitions[i];
                 binding.Button.name = binding.Definition.Key;
-                if (binding.Label != null)
-                {
-                    binding.Label.text = FormatUnitButtonLabel(binding.Definition);
-                }
+                SetButtonIcon(binding.Button, GetUnitButtonSprite(binding.Definition));
             }
 
             for (var i = 0; i < towerButtons.Count && i < currentTowerDefinitions.Length; i++)
@@ -3481,13 +3869,9 @@ namespace WarOfEras.Battle.Core
                 var binding = towerButtons[i];
                 binding.Definition = currentTowerDefinitions[i];
                 binding.Button.name = "Tower " + (i + 1);
-                if (binding.Label != null)
-                {
-                    binding.Label.text = FormatTowerButtonLabel(binding.Definition);
-                }
+                SetButtonIcon(binding.Button, GetTowerButtonSprite(i));
             }
 
-            SetButtonLabel(resourceWellButton, FormatResourceWellButtonLabel());
             SetButtonLabel(agePowerButton, AgePowers[ageIndex].DisplayName);
         }
 
@@ -3628,26 +4012,21 @@ namespace WarOfEras.Battle.Core
             route = null;
             laneIndex = EstimateLaneIndex(targetPosition);
 
-            if (!TryFindReachableTarget(targetPosition, out var routeTarget))
+            if (!TryFindReachableTarget(targetPosition, BuilderConstructionRange, out var routeTarget))
             {
                 return false;
             }
 
             List<Vector3> bestPoints = null;
             var bestCost = float.PositiveInfinity;
-            for (var i = 0; i < PlayerRouteStartNodes.Length; i++)
+            for (var i = 0; i < playerRouteStartNodes.Length; i++)
             {
-                if (!TryBuildShortestRoute(PlayerRouteStartNodes[i], routeTarget, out var points, out var cost))
+                if (!TryBuildShortestRoute(playerRouteStartNodes[i], routeTarget, out var points, out var cost))
                 {
                     continue;
                 }
 
                 var finalLeg = Vector2.Distance(points[points.Count - 1], targetPosition);
-                if (finalLeg > 0.04f)
-                {
-                    points.Add(targetPosition);
-                }
-
                 var totalCost = cost + finalLeg;
                 if (totalCost >= bestCost)
                 {
@@ -4465,11 +4844,11 @@ namespace WarOfEras.Battle.Core
                 }
                 else if (selectedPlayerUnits.Count > 0)
                 {
-                    laneText.text = "\u5df2\u6846\u9009 " + selectedPlayerUnits.Count + " \u540d\u58eb\u5175\n\u70b9\u51fb\u9053\u8def\u4e0b\u8fbe\u884c\u519b\u76ee\u6807\n\u53f3\u952e\u89e3\u9664\u7ba1\u63a7\u6807\u8bc6";
+                    laneText.text = "\u5df2\u9009\u4e2d " + selectedPlayerUnits.Count + " \u540d\u58eb\u5175\n\u70b9\u51fb\u9053\u8def\u4e0b\u8fbe\u884c\u519b\u76ee\u6807\n\u53f3\u952e\u89e3\u9664\u7ba1\u63a7\u6807\u8bc6";
                 }
                 else
                 {
-                    laneText.text = "\u9ed8\u8ba4\u51fa\u5175\u8def\u7ebf\uff1a" + laneNames[selectedLane] + "\n\u70b9\u51fb\u4e0a/\u4e2d/\u4e0b\u8def\u5207\u6362\u4e4b\u540e\u51fa\u5175\n\u62d6\u62fd\u6846\u9009\u58eb\u5175\u624d\u80fd\u5355\u72ec\u6307\u6325";
+                    laneText.text = "\u9ed8\u8ba4\u51fa\u5175\u8def\u7ebf\uff1a" + laneNames[selectedLane] + "\n\u70b9\u51fb\u4e0a/\u4e2d/\u4e0b\u8def\u5207\u6362\u4e4b\u540e\u51fa\u5175\n\u70b9\u51fb\u5355\u4e2a\u58eb\u5175\u6216\u62d6\u62fd\u6846\u9009\u540e\u5355\u72ec\u6307\u6325";
                 }
             }
 
@@ -4486,28 +4865,22 @@ namespace WarOfEras.Battle.Core
             for (var i = 0; i < unitButtons.Count; i++)
             {
                 var binding = unitButtons[i];
-                if (binding.Label != null)
-                {
-                    binding.Label.text = FormatUnitButtonLabel(binding.Definition);
-                }
-
-                binding.Button.interactable = gameStarted && !gameOver && coins >= GetUnitCost(binding.Definition);
+                var canSpawn = gameStarted && !gameOver && coins >= GetUnitCost(binding.Definition);
+                binding.Button.interactable = canSpawn;
+                SetButtonIconAlpha(binding.Icon, canSpawn);
                 SetButtonColor(binding.Button, new Color(0.43f, 0.31f, 0.17f, 1f));
             }
 
             for (var i = 0; i < towerButtons.Count; i++)
             {
                 var binding = towerButtons[i];
-                if (binding.Label != null)
-                {
-                    binding.Label.text = FormatTowerButtonLabel(binding.Definition);
-                }
-
-                binding.Button.interactable = gameStarted
+                var canBuildTower = gameStarted
                     && !gameOver
                     && binding.Definition != null
                     && coins >= binding.Definition.Cost
                     && HasAvailableBuildSlot(BuildPlacementKind.Tower);
+                binding.Button.interactable = canBuildTower;
+                SetButtonIconAlpha(binding.Icon, canBuildTower);
 
                 var selected = i == selectedTowerIndex;
                 SetButtonColor(binding.Button, activeBuildPlacement == BuildPlacementKind.Tower && selected
@@ -4517,11 +4890,12 @@ namespace WarOfEras.Battle.Core
 
             if (resourceWellButton != null)
             {
-                SetButtonLabel(resourceWellButton, FormatResourceWellButtonLabel());
-                resourceWellButton.interactable = gameStarted
+                var canBuildResourceWell = gameStarted
                     && !gameOver
                     && coins >= ResourceWellCost
                     && HasAvailableBuildSlot(BuildPlacementKind.ResourceWell);
+                resourceWellButton.interactable = canBuildResourceWell;
+                SetButtonIconAlpha(GetButtonIcon(resourceWellButton), canBuildResourceWell);
                 SetButtonColor(resourceWellButton, activeBuildPlacement == BuildPlacementKind.ResourceWell
                     ? new Color(0.78f, 0.16f, 0.1f, 1f)
                     : new Color(0.24f, 0.46f, 0.36f, 1f));
@@ -4656,6 +5030,72 @@ namespace WarOfEras.Battle.Core
             return sprite;
         }
 
+        private Button CreateImageButton(RectTransform parent, string name, Sprite icon, UnityEngine.Events.UnityAction onClick, Color normalColor, Func<string> tooltipProvider)
+        {
+            var buttonRect = CreatePanel(name, parent, normalColor);
+            var buttonImage = buttonRect.GetComponent<Image>();
+            buttonImage.sprite = ButtonSprite;
+            buttonImage.type = Image.Type.Sliced;
+            var button = buttonRect.gameObject.AddComponent<Button>();
+            button.targetGraphic = buttonImage;
+            button.onClick.AddListener(onClick);
+
+            var outline = buttonRect.gameObject.AddComponent<Outline>();
+            outline.effectColor = Color.Lerp(normalColor, Color.black, 0.58f);
+            outline.effectDistance = new Vector2(2f, -2f);
+            SetButtonColor(button, normalColor);
+
+            var iconBackplate = CreatePanel("Artwork Backplate", buttonRect, new Color(0.06f, 0.07f, 0.06f, 0.56f));
+            iconBackplate.anchorMin = new Vector2(0.03f, 0.03f);
+            iconBackplate.anchorMax = new Vector2(0.97f, 0.97f);
+            iconBackplate.offsetMin = Vector2.zero;
+            iconBackplate.offsetMax = Vector2.zero;
+            iconBackplate.GetComponent<Image>().raycastTarget = false;
+
+            var artworkObject = new GameObject("Artwork", typeof(RectTransform), typeof(Image));
+            artworkObject.transform.SetParent(buttonRect, false);
+            var artwork = artworkObject.GetComponent<Image>();
+            artwork.sprite = icon != null ? icon : WhiteSprite;
+            artwork.preserveAspect = true;
+            artwork.raycastTarget = false;
+            artwork.color = Color.white;
+            artwork.rectTransform.anchorMin = new Vector2(0.03f, 0.03f);
+            artwork.rectTransform.anchorMax = new Vector2(0.97f, 0.97f);
+            artwork.rectTransform.offsetMin = Vector2.zero;
+            artwork.rectTransform.offsetMax = Vector2.zero;
+
+            AddCommandTooltip(button, tooltipProvider);
+            return button;
+        }
+
+        private void AddCommandTooltip(Button button, Func<string> tooltipProvider)
+        {
+            if (button == null || tooltipProvider == null)
+            {
+                return;
+            }
+
+            var eventTrigger = button.gameObject.GetComponent<EventTrigger>();
+            if (eventTrigger == null)
+            {
+                eventTrigger = button.gameObject.AddComponent<EventTrigger>();
+            }
+
+            AddPointerEvent(eventTrigger, EventTriggerType.PointerEnter, eventData =>
+            {
+                var pointerEvent = eventData as PointerEventData;
+                BeginCommandTooltipHover(tooltipProvider, pointerEvent != null ? pointerEvent.position : Vector2.zero);
+            });
+            AddPointerEvent(eventTrigger, EventTriggerType.PointerExit, eventData => HideCommandTooltip());
+        }
+
+        private static void AddPointerEvent(EventTrigger trigger, EventTriggerType eventType, UnityEngine.Events.UnityAction<BaseEventData> callback)
+        {
+            var entry = new EventTrigger.Entry { eventID = eventType };
+            entry.callback.AddListener(callback);
+            trigger.triggers.Add(entry);
+        }
+
         private Button CreateButton(RectTransform parent, string name, string label, UnityEngine.Events.UnityAction onClick, Color normalColor)
         {
             var buttonRect = CreatePanel(name, parent, normalColor);
@@ -4728,6 +5168,39 @@ namespace WarOfEras.Battle.Core
 
             var labelTransform = button.transform.Find("Label");
             return labelTransform != null ? labelTransform.GetComponent<Text>() : button.GetComponentInChildren<Text>();
+        }
+
+        private static Image GetButtonIcon(Button button)
+        {
+            if (button == null)
+            {
+                return null;
+            }
+
+            var iconTransform = button.transform.Find("Artwork");
+            return iconTransform != null ? iconTransform.GetComponent<Image>() : null;
+        }
+
+        private void SetButtonIcon(Button button, Sprite sprite)
+        {
+            var icon = GetButtonIcon(button);
+            if (icon != null)
+            {
+                icon.sprite = sprite != null ? sprite : WhiteSprite;
+                icon.preserveAspect = true;
+            }
+        }
+
+        private static void SetButtonIconAlpha(Image icon, bool enabled)
+        {
+            if (icon == null)
+            {
+                return;
+            }
+
+            var color = icon.color;
+            color.a = enabled ? 1f : 0.38f;
+            icon.color = color;
         }
 
         private static string GetButtonGlyph(string name)

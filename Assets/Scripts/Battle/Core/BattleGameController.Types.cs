@@ -7,30 +7,34 @@ namespace WarOfEras.Battle.Core
     {
         private sealed class UnitButtonBinding
         {
-            public UnitButtonBinding(Button button, Text label, UnitDefinition definition)
+            public UnitButtonBinding(Button button, Text label, Image icon, UnitDefinition definition)
             {
                 Button = button;
                 Label = label;
+                Icon = icon;
                 Definition = definition;
             }
 
             public Button Button { get; }
             public Text Label { get; }
+            public Image Icon { get; }
             public UnitDefinition Definition { get; set; }
         }
 
         private sealed class TowerButtonBinding
         {
-            public TowerButtonBinding(Button button, Text label, int towerIndex, TowerDefinition definition)
+            public TowerButtonBinding(Button button, Text label, Image icon, int towerIndex, TowerDefinition definition)
             {
                 Button = button;
                 Label = label;
+                Icon = icon;
                 TowerIndex = towerIndex;
                 Definition = definition;
             }
 
             public Button Button { get; }
             public Text Label { get; }
+            public Image Icon { get; }
             public int TowerIndex { get; }
             public TowerDefinition Definition { get; set; }
         }

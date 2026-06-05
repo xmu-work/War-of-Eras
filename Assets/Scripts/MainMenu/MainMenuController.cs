@@ -253,7 +253,7 @@ namespace WarOfEras.MainMenu
 
         private void ShowArchiveScreen()
         {
-            ShowInfoScreen("\u5175\u5de5\u56fe\u9274", "\u5175\u79cd\u4e0e\u9632\u5fa1\u8d44\u6599\u5df2\u5f52\u6863\uff0c\u540e\u7eed\u53ef\u6269\u5c55\u4e3a\u8be6\u7ec6\u56fe\u9274\u9875\u3002");
+            ShowArchiveBrowser();
         }
 
         private void ShowSettingsScreen()
@@ -263,7 +263,7 @@ namespace WarOfEras.MainMenu
 
         private void ShowTutorialScreen()
         {
-            ShowInfoScreen("\u73a9\u6cd5\u6559\u7a0b", "\u5efa\u9020\u9632\u7ebf\u3001\u8bad\u7ec3\u5175\u79cd\u3001\u63a8\u8fdb\u7eaa\u5143\uff0c\u6467\u6bc1\u654c\u65b9\u636e\u70b9\u5373\u53ef\u83b7\u80dc\u3002");
+            ShowDetailedTutorialScreen();
         }
 
         private void QuitGame()

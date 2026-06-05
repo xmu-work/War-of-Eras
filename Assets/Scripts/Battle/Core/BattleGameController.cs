@@ -22,8 +22,6 @@ namespace WarOfEras.Battle.Core
         private const string BattleSceneName = "Battle";
         private const string DefeatBackdropPath = "Battle/Outcome/DefeatBackdrop";
         private const string VictoryBackdropPath = "Battle/Outcome/VictoryBackdrop";
-        private const string BuilderUnitMoveFramePrefix = "Battle/Facilities/Builder_move_";
-        private const string BuilderUnitAttackFramePrefix = "Battle/Facilities/Builder_attack_";
         private const string FrontlineBedClipPath = "Audio/Ambience/00_three_lane_frontline_bed_loop";
         private const float CommandTooltipDelaySeconds = 0.5f;
         private const int CommandTooltipFontSize = 24;
@@ -1683,10 +1681,10 @@ namespace WarOfEras.Battle.Core
             var fallbackAttackFramePrefix = AgeVisualSets[0].UnitRoot + "/" + fallbackFolder + "/attack_";
             if (role == UnitRole.Builder)
             {
-                moveFramePrefix = BuilderUnitMoveFramePrefix;
-                attackFramePrefix = BuilderUnitAttackFramePrefix;
-                fallbackMoveFramePrefix = null;
-                fallbackAttackFramePrefix = null;
+                moveFramePrefix = visualSet.UnitRoot + "/Builder/move_";
+                attackFramePrefix = visualSet.UnitRoot + "/Builder/attack_";
+                fallbackMoveFramePrefix = AgeVisualSets[0].UnitRoot + "/Builder/move_";
+                fallbackAttackFramePrefix = AgeVisualSets[0].UnitRoot + "/Builder/attack_";
             }
 
             return new UnitDefinition(
@@ -4630,9 +4628,27 @@ namespace WarOfEras.Battle.Core
             }
 
             coins -= cost;
-            SpawnUnit(definition, 0, selectedLane, playerHealthMultiplier, playerDamageMultiplier, GetPlayerSpeedMultiplier());
+            var isBuilder = definition.Role == UnitRole.Builder;
+            Vector3[] holdRoute = null;
+            if (isBuilder)
+            {
+                var spawnPosition = GetLaneSpawnPosition(0, selectedLane);
+                holdRoute = new[] { spawnPosition, spawnPosition };
+            }
+
+            SpawnUnit(
+                definition,
+                0,
+                selectedLane,
+                playerHealthMultiplier,
+                playerDamageMultiplier,
+                GetPlayerSpeedMultiplier(),
+                holdRoute,
+                isBuilder);
             GainEraValue(definition.Cost * 0.45f);
-            status = definition.DisplayName + "\u5df2\u6d3e\u5f80" + laneNames[selectedLane] + "\u3002";
+            status = isBuilder
+                ? definition.DisplayName + "\u5df2\u5728" + laneNames[selectedLane] + "\u5165\u53e3\u5f85\u547d\uff0c\u9009\u4e2d\u540e\u518d\u70b9\u51fb\u76ee\u6807\u8ba9\u4ed6\u79fb\u52a8\u3002"
+                : definition.DisplayName + "\u5df2\u6d3e\u5f80" + laneNames[selectedLane] + "\u3002";
         }
 
         private void TryBuildTower()
